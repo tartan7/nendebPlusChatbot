@@ -1,0 +1,621 @@
+/*
+Theme Name:  SYN Ownd Child – Lumin Coco
+Theme URI:   https://example.com/lumin-coco
+Template:    syn-ownd
+Author:      株式会社ルーミン・ココ
+Description: 北海道稚内市の不動産会社「株式会社ルーミン・ココ」向けの SYN-Ownd 子テーマ。グリーン基調・Noto Serif JP 見出しに変更し、不動産プラグインのデザインを最適化します。
+Version:     1.0.0
+Text Domain: syn-ownd-child
+License:     GPLv2 or later
+*/
+@charset "utf-8";
+
+
+/* ============================================================
+   1. SYN-Ownd 親テーマ CSS 変数の上書き
+   ------------------------------------------------------------
+   親テーマ assets/css/index.css に定義されている
+   --color-main / --color-link / --color-text などを差し替え
+   = ヘッダ・ボタン・カード・バッジ・ページネーションすべてに反映
+   ============================================================ */
+:root{
+  /* ----- 親テーマの基本トークン ----- */
+  --color-main:           #0F825D;  /* メインカラー */
+  --color-main-gradation: #1F9A6F;  /* グラデーション用 */
+  --color-link:           #1F9A6F;  /* リンク色 */
+  --color-text:           #08593F;  /* 文字色 */
+  --color-background:     #FFFFFF;
+  --color-background-body:#F4F7F1;
+
+  /* 親テーマの拡張カラー (theme.json) */
+  --color-elight01:#E3F3EC;  --color-edark01:#08593F;
+  --color-elight02:#FBE5E0;  --color-edark02:#A02818;
+  --color-elight03:#FBF1D2;  --color-edark03:#B8861A;
+  --color-elight04:#F4F7F1;  --color-edark04:#3D5446;
+
+  /* ニュースバー(赤 CTA) */
+  --color-hdr-news-bg:   #D63C26;
+  --color-hdr-news-font: #FFFFFF;
+
+  --round-common: 14px;
+  --oval-common:  9999px;
+  --shadow-color: #08593F;
+  --shadow-common: 0.10;
+
+
+  /* ============================================================
+     2. 不動産プラグイン (style2025.css) の CSS 変数上書き
+     ------------------------------------------------------------
+     プラグインが定義している --fudou--xxx 変数を Lumin Coco 配色へ
+     ============================================================ */
+  /* テーブル枠線・背景 */
+  --fudou--table-border-color:     #DDE5D6;
+  --fudou--table-background-color: #F4F7F1;
+
+  /* ウィジェット枠線 */
+  --fudou--widget-border-color: #DDE5D6;
+
+  /* select / input 枠線 */
+  --fudou--select-input-border-color: #BFCDB4;
+
+  /* 「物件の詳細を見る」ボタン (黒→緑) */
+  --fudou--button-background-color:        #0F825D;
+  --fudou--button-text-color:              #FFFFFF;
+  --fudou--button-background-hover-color:  #08593F;
+  --fudou--button-text-hover-color:        #FFFFFF;
+
+  /* 価格テキスト色 (赤茶→ブランド赤 CTA) */
+  --fudou--bukken-kakaku-color: #D63C26;
+
+  /* new / up バッジ */
+  --fudou--new-mark-background-color: #D63C26;
+  --fudou--up-mark-background-color:  #E6B028;
+
+
+  /* ----- 子テーマ独自トークン ----- */
+  --c-brick:     #D63C26;
+  --c-brick-100: #FBE5E0;
+  /* 親テーマ syn-ownd は editor-css-vars.php で wp_head に
+     <style id="custom-css-04"> をインライン注入し、--color-edark01 等を
+     カスタマイザー既定値（赤 #D8462F 等）で後勝ち上書きする。
+     ブランドの濃緑／淡緑が必要な箇所では子テーマ専用 --c-* 変数を使う。 */
+  --c-green:      #0F825D;  /* メイングリーン（= --color-main） */
+  --c-green-dark: #08593F;  /* ダークグリーン（旧 --color-edark01） */
+  --c-green-soft: #E3F3EC;  /* ライトグリーン（旧 --color-elight01） */
+  --c-yellow:    #E6B028;
+  --font-display: "Noto Serif JP","Yu Mincho","YuMincho","Hiragino Mincho ProN",serif;
+}
+
+
+/* ============================================================
+   3. 全体トーン
+   ============================================================ */
+body{ background: var(--color-background-body); }
+body.is-nogradation::after{ display:none !important; }
+
+h1,h2,h3,h4,h5,h6,
+.section__ttl,
+.entry__ttl,
+.entry-title,           /* プラグイン物件タイトル */
+.wp-block-post-title,   /* FSE 物件タイトル */
+.widget-common__ttl{
+  font-family: var(--font-display);
+  letter-spacing: .04em;
+}
+.section__ttl::after{
+  width:80px !important; height:2px !important; background:var(--color-main);
+}
+
+.hdr__catchphrase{ background: var(--color-main); letter-spacing:.04em; }
+
+
+/* ============================================================
+   4. SYN-Ownd ヘッダー / ナビ
+   ============================================================ */
+/* メニュー項目に .cta クラスがあれば赤ボタン化 */
+.ddmenu__list > li.cta > a{
+  background: var(--c-brick);
+  color:#fff !important;
+  border-radius: 8px;
+  padding: .55em 1.2em;
+  margin-left: 8px;
+  letter-spacing: .04em;
+}
+.ddmenu__list > li.cta > a:hover{
+  background: color-mix(in srgb, var(--c-brick) 85%, #000);
+}
+
+
+/* ============================================================
+   5. 不動産プラグイン: 物件一覧 (#list_simplepage)
+   ------------------------------------------------------------
+   archive-fudo2025.php / archive-fudo-loop.php が出力する
+   .list_simple_boxtitle / .list_simple_box / .list_picsam /
+   .list_detail / .list_price / .list_address / .list_price_others
+   .list_details_button / .new_mark / .up_mark などに装飾
+   ============================================================ */
+
+/* 物件カード全体 */
+#list_simplepage article.hentry{
+  background:#fff;
+  border:1px solid var(--fudou--table-border-color);
+  border-radius: var(--round-common);
+  box-shadow: 0 4px 12px rgba(8,89,63,.06);
+  padding: 28px 32px;
+  margin-bottom: 4rem !important;
+  transition: box-shadow .25s ease, transform .25s ease;
+}
+#list_simplepage article.hentry:hover{
+  box-shadow: 0 12px 32px rgba(8,89,63,.14);
+  transform: translateY(-2px);
+}
+
+/* タイトル帯 */
+#list_simplepage .list_simple_boxtitle{
+  border-bottom: 2px solid var(--color-main);
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+}
+#list_simplepage .list_simple_boxtitle.seiyaku{
+  border-bottom-color: #999;
+  opacity: .7;
+}
+#list_simplepage .entry-title a{
+  color: var(--color-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+#list_simplepage .entry-title a:hover{ color: var(--color-main); }
+
+/* 価格 (.dpoint1 / .dpoint3) */
+#list_simplepage .dpoint1{
+  color: var(--fudou--bukken-kakaku-color);
+  font-family: var(--font-display);
+}
+#list_simplepage .list_price{
+  background: linear-gradient(135deg, #E3F3EC 0%, #F4F7F1 100%) !important;
+  border-radius: 8px;
+  padding: 14px 18px !important;
+}
+#list_simplepage .list_price.rent{
+  background: linear-gradient(135deg, #FBE5E0 0%, #FFF7F4 100%) !important;
+}
+
+/* 「物件の詳細を見る」ボタン — design system PropertyCard の淡ブルー ghost CTA */
+#list_simplepage .list_details_button{
+  background: #E8F1F8 !important;
+  border: 1px solid #C9DEF0 !important;
+  color: #1F4F7A !important;
+  border-radius: 8px !important;
+  font-weight: 600;
+  letter-spacing: .04em;
+  padding: 11px 0 !important;
+  box-shadow: 0 2px 6px rgba(31,79,122,.06);
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+#list_simplepage a:hover .list_details_button{
+  background: #D5E6F2 !important;
+  border-color: #9EC4E0 !important;
+  color: #163A5C !important;
+}
+
+/* サムネイル枠を緑に */
+#list_simplepage .list_simple_box .list_picsam .list_picsam_img img{
+  border: 1px solid var(--fudou--table-border-color);
+  border-radius: 6px;
+}
+
+/* 所在地 / 物件情報テーブルのヘッダ列 */
+#list_simplepage .list_address table td.list_address_th,
+#list_simplepage .list_price_others table td.list_price_others_th{
+  background: var(--fudou--table-background-color);
+  color: var(--color-main);
+  font-weight: 600;
+}
+
+/* new / up バッジを丸ピル化 */
+.entry-title .new_mark,
+.entry-title .up_mark{
+  font-family: var(--font-display) !important;
+  font-size: 1.2rem !important;
+  padding: 2px 10px !important;
+  border-radius: 9999px !important;
+  background: var(--fudou--new-mark-background-color) !important;
+  color: #fff !important;
+  margin-left: 8px;
+}
+.entry-title .up_mark{
+  background: var(--fudou--up-mark-background-color) !important;
+  color: var(--color-text) !important;
+}
+
+/* archive-fudo の戻るリンク */
+.archive-fudo .pageback a{
+  display: inline-block;
+  border:1px solid var(--color-main);
+  color: var(--color-main);
+  padding: 8px 18px;
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: all .2s ease;
+}
+.archive-fudo .pageback a:hover{
+  background: var(--color-main);
+  color: #fff;
+}
+
+
+/* ============================================================
+   6. 不動産プラグイン: 物件詳細 (#list_simplepage2)
+   ============================================================ */
+
+#list_simplepage2 .list_simple_box{
+  background: #fff;
+  border-radius: var(--round-common);
+  border: 1px solid var(--fudou--table-border-color);
+  box-shadow: 0 4px 12px rgba(8,89,63,.06);
+  padding: 32px;
+}
+
+/* 価格枠 */
+#list_simplepage2 .list_price{
+  background: linear-gradient(135deg, #E3F3EC 0%, #FFFFFF 100%) !important;
+  border-radius: 10px;
+  padding: 20px !important;
+}
+#list_simplepage2 .list_price.rent{
+  background: linear-gradient(135deg, #FBE5E0 0%, #FFFFFF 100%) !important;
+}
+#list_simplepage2 .list_price .dpoint4{
+  color: var(--fudou--bukken-kakaku-color);
+  font-family: var(--font-display);
+}
+
+/* 物件詳細テーブル (#list_add / #list_other) */
+#list_simplepage2 .list_detail #list_add th,
+#list_simplepage2 .list_detail #list_other th{
+  background: var(--fudou--table-background-color) !important;
+  color: var(--color-main);
+  font-weight: 600;
+}
+#list_simplepage2 .list_detail table th,
+#list_simplepage2 .list_detail table td{
+  border-color: var(--fudou--table-border-color);
+}
+
+/* 詳細画像枠 */
+#list_simplepage2 .list_picsam img{
+  border: 1px solid var(--fudou--table-border-color) !important;
+  border-radius: 6px;
+}
+
+/* 物件問合せ先 / 連絡先ボックス */
+#toiawasesaki{
+  background: var(--c-green-soft);
+  border-left: 4px solid var(--color-main);
+  border-radius: 8px;
+  padding: 24px 28px;
+  margin-top: 32px;
+}
+
+
+/* ============================================================
+   7. 不動産プラグイン: 問い合わせ系 (#contact_form / contact.php)
+   ============================================================ */
+#contact_form,
+#ssl_contact{
+  background:#fff;
+  border:1px solid var(--fudou--table-border-color) !important;
+  border-radius: var(--round-common) !important;
+  box-shadow: 0 4px 12px rgba(8,89,63,.06) !important;
+  padding: 28px !important;
+}
+#contact_form input[type="text"],
+#contact_form input[type="email"],
+#contact_form input[type="tel"],
+#contact_form textarea,
+#contact_form select,
+#ssl_contact input[type="text"],
+#ssl_contact input[type="email"],
+#ssl_contact textarea{
+  border:1px solid var(--fudou--select-input-border-color) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  background: #fff !important;
+}
+#contact_form input:focus,
+#contact_form textarea:focus,
+#contact_form select:focus,
+#ssl_contact input:focus,
+#ssl_contact textarea:focus{
+  outline: none !important;
+  border-color: var(--color-main) !important;
+  box-shadow: 0 0 0 3px rgba(15,130,93,.18) !important;
+}
+#contact_form input[type="submit"],
+#ssl_contact .wpcf7-submit,
+.wpcf7-submit{
+  background: var(--c-brick) !important;
+  border: 1px solid var(--c-brick) !important;
+  border-radius: 8px !important;
+  color:#fff !important;
+  font-weight: 600 !important;
+  letter-spacing: .04em !important;
+  padding: 12px 32px !important;
+  height: auto !important;
+  cursor: pointer !important;
+  box-shadow: 0 6px 16px rgba(238,46,24,.36) !important;
+  transition: background .2s ease;
+}
+#contact_form input[type="submit"]:hover,
+#ssl_contact .wpcf7-submit:hover,
+.wpcf7-submit:hover{
+  background: color-mix(in srgb, var(--c-brick) 85%, #000) !important;
+}
+
+/* マッチングメール条件登録ボタン */
+#main #maching_mail a{
+  background: var(--color-main) !important;
+  border-radius: 8px !important;
+  text-shadow: none !important;
+  font-weight: 600 !important;
+}
+
+
+/* ============================================================
+   8. 不動産プラグイン: トップウィジェット領域 (#top_fbox)
+   ------------------------------------------------------------
+   home2025.php が出力する dynamic_sidebar('top_widgets')
+   ============================================================ */
+#top_fbox{
+  display: grid;
+  grid-template-columns: repeat( auto-fit, minmax(280px, 1fr) );
+  gap: 24px;
+  margin: 40px 0;
+}
+#top_fbox .widget,
+#top_fbox > section{
+  background: #fff;
+  border: 1px solid var(--fudou--table-border-color);
+  border-radius: var(--round-common);
+  padding: 22px 26px;
+  box-shadow: 0 4px 12px rgba(8,89,63,.06);
+}
+#top_fbox .widget-common__ttl,
+#top_fbox h2,
+#top_fbox h3{
+  font-family: var(--font-display);
+  color: var(--color-main);
+  border-bottom: 1px solid var(--fudou--table-border-color);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+
+/* ============================================================
+   9. SYN-Ownd 共通カード / バッジ / ページネーション
+   ============================================================ */
+.common-list__link{
+  border-radius: var(--round-common);
+  border: 1px solid var(--fudou--table-border-color);
+  box-shadow: 0 4px 12px rgba(8,89,63,.06);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.common-list__link:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(8,89,63,.14);
+}
+
+.tagcloud a,
+.common-tag__item a{
+  border-radius: 9999px;
+  border-color: var(--fudou--table-border-color);
+  color: var(--color-main);
+}
+.tagcloud a:hover,
+.common-tag__item a:hover{
+  background: var(--c-green-soft);
+  border-color: var(--color-main);
+}
+
+.pagination__pager{
+  background: var(--color-main);
+  border-color: var(--color-main);
+}
+.pagination__pager-current{
+  background: #fff;
+  color: var(--color-main);
+}
+
+
+/* ============================================================
+   10. フッター
+   ============================================================ */
+.ftrnav-widget .widget-common__ttl,
+.ftr-nav__col h4{
+  font-family: var(--font-display);
+  color: var(--color-main);
+  border-bottom: 1px solid var(--fudou--table-border-color);
+  padding-bottom: 8px;
+}
+
+
+/* ============================================================
+   11. ユーティリティ (selection / focus / chat FAB)
+   ============================================================ */
+::selection{ background: var(--c-brick-100); color: var(--color-text); }
+:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15,130,93,.28);
+  border-radius: 4px;
+}
+
+.lumin-chat-fab{
+  position: fixed; right: 24px; bottom: 24px; z-index: 50;
+  width: 60px; height: 60px; border-radius: 9999px; border: none;
+  background: var(--color-main); color:#fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 12px 32px rgba(8,89,63,.28);
+  cursor: pointer;
+  transition: background .2s ease, transform .2s ease;
+}
+.lumin-chat-fab:hover{ background: var(--c-green-dark); transform: scale(1.05); }
+/* ============================================================
+   12.その他
+   ============================================================ */
+div#weather-wrapper div#weather1 {
+  display:grid !important;
+}
+
+/* ============================================================
+   13. 関連物件 — fudou 関連物件表示ウィジェット (ul.syousai-content) デザイン上書き
+   ------------------------------------------------------------
+   物件詳細ページの「関連物件」エリアに配置する fudou ウィジェット
+   （fudou/fudou-widget-syousai）は ul.syousai-content を出力する。
+   syn-ownd テーマでは fudou の corners.css が読み込まれないため
+   レイアウトを 3 列グリッドカードに変換する。
+   ============================================================ */
+
+/* main 内配置：横 padding と max-width をリセット */
+#list_simplepage2 .lc-related {
+  max-width: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 見出し — lc-block-wrap__ttl (h3) を大きく目立たせる */
+.lc-related .lc-block-wrap__ttl {
+  font-family: var(--font-display) !important;
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  color: var(--color-text) !important;
+  margin: 0 0 28px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 3px solid var(--color-main) !important;
+  letter-spacing: .06em !important;
+}
+.lc-related .widget-title,
+.lc-related h2.widget-title {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 28px;
+  padding-bottom: 16px;
+  border-bottom: 3px solid var(--color-main);
+  letter-spacing: .06em;
+}
+
+/* グリッドレイアウトに変換 */
+.lc-related ul.syousai-content {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 14px !important;
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* カードスタイル（コンパクト） */
+.lc-related ul.syousai-content li {
+  float: none !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #fff !important;
+  border: 1px solid var(--fudou--table-border-color) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(8,89,63,.06) !important;
+  transition: transform .25s ease, box-shadow .25s ease !important;
+  position: relative !important;
+}
+.lc-related ul.syousai-content li:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(8,89,63,.12) !important;
+}
+
+/* サムネイル画像 — 高さ固定でカードをコンパクトに */
+.lc-related ul.syousai-content li .box2image {
+  width: 100% !important;
+  height: 120px !important;
+  float: none !important;
+  padding: 0 !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+.lc-related ul.syousai-content li > a {
+  display: block !important;
+}
+
+/* テキスト群 */
+.lc-related ul.syousai-content li .top_title {
+  font-family: var(--font-display) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+  padding: 10px 12px 4px !important;
+  display: block !important;
+  line-height: 1.4 !important;
+}
+.lc-related ul.syousai-content li .top_price {
+  font-family: var(--font-display) !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: var(--c-brick) !important;
+  padding: 0 12px 4px !important;
+  display: block !important;
+}
+.lc-related ul.syousai-content li .top_madori,
+.lc-related ul.syousai-content li .top_menseki,
+.lc-related ul.syousai-content li .top_shozaichi,
+.lc-related ul.syousai-content li .top_kotsu {
+  font-size: 12px !important;
+  color: #3D5446 !important;
+  padding: 0 12px 3px !important;
+  display: block !important;
+  float: none !important;
+}
+
+/* フッター行：ボタンを右寄せに整列 */
+.lc-related .top_r_footer {
+  margin-top: auto !important;
+  padding: 6px 12px 10px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+}
+.lc-related .box1low {
+  float: none !important;
+}
+.lc-related .box1low a {
+  display: inline-block !important;
+  background: var(--color-main) !important;
+  color: #fff !important;
+  padding: 6px 16px !important;
+  border-radius: var(--oval-common) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: .04em !important;
+  text-decoration: none !important;
+  transition: background .2s !important;
+}
+.lc-related .box1low a:hover {
+  background: color-mix(in srgb, var(--color-main) 80%, #000) !important;
+  text-decoration: none !important;
+}
+
+/* レスポンシブ */
+@media (max-width: 900px) {
+  .lc-related ul.syousai-content {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 600px) {
+  .lc-related ul.syousai-content {
+    grid-template-columns: 1fr !important;
+  }
+}

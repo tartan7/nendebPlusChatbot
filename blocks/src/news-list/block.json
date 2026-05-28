@@ -1,0 +1,17 @@
+{
+  "apiVersion": 3,
+  "name": "syn-ownd-child/lc-news-list",
+  "title": "最新情報",
+  "category": "widgets",
+  "icon": "megaphone",
+  "description": "通常投稿（post）の最新記事を一覧表示します。",
+  "attributes": {
+    "title":           { "type": "string",  "default": "最新情報" },
+    "eyebrow":         { "type": "string",  "default": "NEWS / INFORMATION" },
+    "postsPerPage":    { "type": "number",  "default": 5 },
+    "displayCategory": { "type": "boolean", "default": true },
+    "displayDate":     { "type": "boolean", "default": true }
+  },
+  "supports": { "html": false },
+  "editorScript": "file:./index.js"
+}

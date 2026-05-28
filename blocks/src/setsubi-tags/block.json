@@ -1,0 +1,15 @@
+{
+  "apiVersion": 3,
+  "name": "syn-ownd-child/lc-setsubi-tags",
+  "title": "設備・条件タグクラウド",
+  "category": "widgets",
+  "icon": "tagcloud",
+  "description": "fudou プラグインの設備・条件 (setsubi メタ) を集計したタグクラウド。バルコニー / オートロック / IHコンロ等。",
+  "attributes": {
+    "title":     { "type": "string",  "default": "設備・条件タグ" },
+    "itemLimit": { "type": "number",  "default": 30 },
+    "showCount": { "type": "boolean", "default": false }
+  },
+  "supports": { "html": false },
+  "editorScript": "file:./index.js"
+}

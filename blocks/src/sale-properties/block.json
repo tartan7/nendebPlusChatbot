@@ -1,0 +1,17 @@
+{
+  "apiVersion": 3,
+  "name": "syn-ownd-child/lc-sale-properties",
+  "title": "売買物件",
+  "category": "widgets",
+  "icon": "admin-home",
+  "description": "売買物件を表示するブロック",
+  "attributes": {
+    "title": { "type": "string", "default": "売買物件" },
+    "item": { "type": "number", "default": 4 },
+    "sort": { "type": "string", "default": "date" },
+    "displayItems": { "type": "object", "default": { "title": true, "price": true, "layout": true, "area": true } },
+    "buttonText": { "type": "string", "default": "物件詳細を見る" }
+  },
+  "supports": { "html": false },
+  "editorScript": "file:./index.js"
+}

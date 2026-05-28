@@ -1,0 +1,15 @@
+{
+  "apiVersion": 3,
+  "name": "syn-ownd-child/lc-sidebar-tags",
+  "title": "設備・条件タグ",
+  "category": "widgets",
+  "icon": "tag",
+  "description": "物件投稿タグ (bukken_tag) のタームを一覧表示するタグクラウド",
+  "attributes": {
+    "title": { "type": "string", "default": "設備・条件タグ" },
+    "taxonomy": { "type": "string", "default": "bukken_tag" },
+    "itemLimit": { "type": "number", "default": 20 }
+  },
+  "supports": { "html": false },
+  "editorScript": "file:./index.js"
+}

@@ -1,0 +1,15 @@
+{
+  "apiVersion": 3,
+  "name": "syn-ownd-child/lc-property-search",
+  "title": "物件を探す",
+  "category": "widgets",
+  "icon": "search",
+  "description": "物件検索のクイックフォームを出力します",
+  "attributes": {
+    "title": { "type": "string", "default": "物件を探す" },
+    "archiveUrl": { "type": "string", "default": "/archive-fudo/" },
+    "displayFields": { "type": "array", "default": [ "kbn", "area", "mado", "price" ] }
+  },
+  "supports": { "html": false },
+  "editorScript": "file:./index.js"
+}

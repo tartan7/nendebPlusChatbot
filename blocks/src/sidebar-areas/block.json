@@ -1,0 +1,16 @@
+{
+  "apiVersion": 3,
+  "name": "syn-ownd-child/lc-sidebar-areas",
+  "title": "エリアから探す",
+  "category": "widgets",
+  "icon": "location-alt",
+  "description": "fudo 物件の所在地メタ (shozaichimeisho) を市区町村ごとに集計し、エリア一覧として表示します。",
+  "attributes": {
+    "title":         { "type": "string",  "default": "エリアから探す" },
+    "prefecture":    { "type": "string",  "default": "北海道" },
+    "limitPerCity":  { "type": "number",  "default": 30 },
+    "showCount":     { "type": "boolean", "default": false }
+  },
+  "supports": { "html": false },
+  "editorScript": "file:./index.js"
+}

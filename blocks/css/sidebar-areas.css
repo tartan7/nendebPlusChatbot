@@ -1,0 +1,6 @@
+.lc-sidebar-areas{display:block}
+.lc-sidebar-areas__list{list-style:none;margin:0;padding:0}
+.lc-sidebar-areas__item{border-bottom:1px solid #eee}
+.lc-sidebar-areas__item a{display:block;padding:.5rem .25rem;color:inherit;text-decoration:none}
+.lc-sidebar-areas__item a:hover{background:#f6f9f7;color:var(--synx-link,#1F9A6F)}
+.lc-sidebar-areas__count{color:#888;font-size:.85em}

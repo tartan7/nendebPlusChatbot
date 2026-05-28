@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56" width="240" height="56">
+  <g transform="translate(8 8)">
+    <path d="M20 4 L36 18 L36 38 L4 38 L4 18 Z" fill="#0F825D"></path>
+    <rect x="16" y="22" width="8" height="16" fill="#F4F7F1"></rect>
+    <circle cx="22" cy="30" r="0.9" fill="#0F825D"></circle>
+  </g>
+  <g transform="translate(60 0)" font-family="Noto Serif JP, serif" fill="#08593F">
+    <text x="0" y="26" font-size="20" font-weight="600" letter-spacing="0.04em">SYN-Ownd</text>
+    <text x="0" y="46" font-size="11" font-weight="500" letter-spacing="0.16em" fill="#3D5446" font-family="Noto Sans JP, sans-serif">REAL ESTATE</text>
+  </g>
+</svg>

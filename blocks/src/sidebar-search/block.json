@@ -1,0 +1,14 @@
+{
+  "apiVersion": 3,
+  "name": "syn-ownd-child/lc-sidebar-search",
+  "title": "キーワードで物件を検索",
+  "category": "widgets",
+  "icon": "search",
+  "description": "サイドバー向けのキーワード検索フォーム（fudo限定）",
+  "attributes": {
+    "title": { "type": "string", "default": "キーワードで物件を検索" },
+    "placeholder": { "type": "string", "default": "物件キーワード" }
+  },
+  "supports": { "html": false },
+  "editorScript": "file:./index.js"
+}
