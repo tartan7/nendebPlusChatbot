@@ -183,6 +183,54 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 		<p class="lc-fee-foot">
 			上記は宅地建物取引業法に基づく上限額です。実際のご契約時はお見積りいたします。賃貸物件の仲介手数料は別途、契約形態に応じてご案内します。
 		</p>
+
+		<div class="lc-fee-tokurei">
+			<h3 class="lc-fee-tokurei__ttl">低廉な空家等の売買における特例 <small>宅地建物取引業法46条・2024年7月1日改正</small></h3>
+			<p class="lc-fee-tokurei__lead">
+				売買価格が800万円以下の低廉な空家等（土地・建物）を売買する場合、上記の上限額では現地調査・現地訪問等に要する実費を賄いきれないケースがあります。このため宅地建物取引業法に基づく特例として、上記の上限に代えて合計<strong>33万円（消費税込）</strong>を上限とする仲介手数料をいただく場合があります。
+			</p>
+			<p class="lc-fee-tokurei__lead">
+				この特例を適用する場合は、媒介契約の締結前に金額を明示してご説明し、ご了承をいただいた上で契約を締結いたします。無断で特例上限を適用することはありません。
+			</p>
+
+			<table class="lc-fee-tokurei-table" summary="売買価格別の仲介手数料上限額の例">
+				<caption>売買価格別の上限額の例</caption>
+				<thead>
+					<tr>
+						<th scope="col">売買価格</th>
+						<th scope="col">通常の上限<small>速算法・税込</small></th>
+						<th scope="col">特例適用時の上限<small>税込</small></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>100万円</td>
+						<td>5.5万円</td>
+						<td>33万円</td>
+					</tr>
+					<tr>
+						<td>300万円</td>
+						<td>15.4万円</td>
+						<td>33万円</td>
+					</tr>
+					<tr>
+						<td>500万円</td>
+						<td>23.1万円</td>
+						<td>33万円</td>
+					</tr>
+					<tr>
+						<td>800万円</td>
+						<td>33万円</td>
+						<td>33万円<small>＝通常上限と同額</small></td>
+					</tr>
+				</tbody>
+			</table>
+
+			<p class="lc-fee-foot">
+				※ 800万円を超える売買には本特例は適用されません（上記表の「通常の上限」のみとなります）。<br />
+				※ 上表は法令上の「上限額」であり、実際にいただく金額は物件ごとに事前見積もり・ご説明の上で決定します。
+			</p>
+		</div>
 	</section>
 
 	<!-- ============ 社長プロフィール ============ -->

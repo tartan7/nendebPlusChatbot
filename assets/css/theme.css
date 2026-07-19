@@ -961,6 +961,29 @@ form.lc-sidebar-search > h3{
 .lc-fee-card__no{ position:absolute; top:14px; right:18px; font-family:var(--font-display); font-size:12px; color:#BFCDB4; letter-spacing:.18em; font-variant-numeric:tabular-nums; }
 .lc-fee-foot{ margin-top:14px; font-size:12px; color:#3D5446; line-height:1.8; padding-left:18px; border-left:3px solid var(--c-green-soft); }
 
+/* 仲介手数料 特例（低廉な空家等の売買における媒介報酬特例） */
+.lc-fee-tokurei{ margin-top:28px; padding:28px 30px; background:var(--c-green-soft); border-radius:14px; border-top:4px solid var(--c-yellow); }
+.lc-fee-tokurei__ttl{ font-family:var(--font-display); font-size:17px; font-weight:600; color:var(--color-text); margin:0 0 14px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.lc-fee-tokurei__ttl small{ font-family:"Noto Sans JP",sans-serif; font-size:11px; font-weight:400; color:#3D5446; letter-spacing:.04em; }
+.lc-fee-tokurei__lead{ font-size:14px; line-height:1.95; color:var(--color-text); margin:0 0 14px; }
+.lc-fee-tokurei__lead:last-of-type{ margin-bottom:20px; }
+
+.lc-fee-tokurei-table{ width:100%; border-collapse:separate; border-spacing:0; background:#fff; border:1px solid var(--fudou--table-border-color); border-radius:10px; overflow:hidden; font-size:13px; margin-bottom:14px; }
+.lc-fee-tokurei-table caption{ caption-side:top; text-align:left; font-size:12px; color:#3D5446; letter-spacing:.08em; margin-bottom:8px; }
+.lc-fee-tokurei-table th, .lc-fee-tokurei-table td{ padding:12px 16px; text-align:left; }
+.lc-fee-tokurei-table thead th{ background:#fff; border-bottom:1px solid var(--fudou--table-border-color); color:var(--color-main); font-weight:600; letter-spacing:.02em; }
+.lc-fee-tokurei-table thead th small{ display:block; font-size:10px; font-weight:400; color:#3D5446; margin-top:2px; }
+.lc-fee-tokurei-table tbody tr + tr td{ border-top:1px solid #EDF1E8; }
+.lc-fee-tokurei-table tbody td:first-child{ font-weight:600; color:var(--color-text); }
+.lc-fee-tokurei-table tbody td:last-child{ color:var(--c-brick); font-weight:600; }
+.lc-fee-tokurei-table tbody td small{ display:block; font-size:10px; font-weight:400; color:#3D5446; margin-top:2px; }
+
+@media (max-width:600px){
+	.lc-fee-tokurei{ padding:22px 18px; }
+	.lc-fee-tokurei-table{ font-size:12px; }
+	.lc-fee-tokurei-table th, .lc-fee-tokurei-table td{ padding:10px 10px; }
+}
+
 /* 社長プロフィール */
 .lc-profile{ background:#fff; border:1px solid var(--fudou--table-border-color); border-radius:14px; box-shadow:0 4px 12px rgba(8,89,63,.06); overflow:hidden; display:grid; grid-template-columns:280px 1fr; align-items:stretch; }
 .lc-profile__photo{ background:#E3F3EC center/cover no-repeat; min-height:340px; position:relative; }
