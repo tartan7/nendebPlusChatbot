@@ -321,11 +321,13 @@ add_shortcode( 'rec_wak_row', function ( $atts ) {
 	), $atts, 'rec_wak_row' );
 
 	$link_html = '—';
-	if ( $a['link'] ) {
+	if ( $a['link'] && $a['link'] !== '#' ) {
 		$label = $a['label'] ? $a['label'] : wp_parse_url( $a['link'], PHP_URL_HOST );
 		$link_html = '<a href="' . esc_url( $a['link'] ) . '" target="_blank" rel="noopener">'
 			. esc_html( $label )
 			. '<span class="ext-icon" aria-label="外部リンク">↗</span></a>';
+	} elseif ( $a['label'] ) {
+		$link_html = esc_html( $a['label'] );
 	}
 
 	$date_html = '—';
@@ -378,7 +380,7 @@ add_shortcode( 'rec_flow_item', function ( $atts, $content = '' ) {
 	), $atts, 'rec_flow_item' );
 
 	$allowed = array( 'b' => array(), 'strong' => array(), 'a' => array( 'href' => array() ) );
-	$desc_html = $a['desc'] ? esc_html( $a['desc'] )
+	$desc_html = $a['desc'] ? wp_kses( $a['desc'], $allowed )
 	                        : wp_kses( trim( $content ), $allowed );
 	$out  = '<li><div>';
 	$out .= '<strong>' . esc_html( $a['title'] ) . '</strong>';

@@ -20,7 +20,7 @@ $company_addr_raw = get_theme_mod( 'lc_company_address', "〒097-0017\n北海道
 $company_lic      = get_theme_mod( 'lc_company_license', '宅地建物取引業免許　北海道知事 宗谷(4) 第53号' );
 $company_tel_disp = get_theme_mod( 'lc_company_tel', '0162-32-8877' );
 $company_tel_num  = preg_replace( '/[^0-9]/', '', $company_tel_disp );
-$company_tel_note = get_theme_mod( 'lc_company_tel_note', '受付 9:00-17:30 ／ 日曜定休' );
+$company_tel_note = get_theme_mod( 'lc_company_tel_note', '受付 9:00-18:00 ／ 日・祝日定休' );
 $contact_url      = get_theme_mod( 'lc_chat_fallback_url', home_url( '/contact/' ) );
 
 // 住所だけ抽出（先頭 〒 行から）
@@ -69,7 +69,7 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 		</div>
 		<div class="lc-mission__body">
 			<p>「部屋を選ぶ」＝「街を選ぶ」「人生を選ぶ」。稚内のまちと真摯に向き合い、賃貸も売買も、長くお付き合いできる一軒を一緒に探します。</p>
-			<p><?php echo esc_html( $company_lic ); ?>　／　設立 2007年12月　／　日曜定休</p>
+			<p><?php echo esc_html( $company_lic ); ?>　／　設立 2007年12月　／　日曜・祝日定休</p>
 		</div>
 	</section>
 
@@ -123,7 +123,7 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 				</tr>
 				<tr>
 					<th>営業時間</th>
-					<td><?php echo esc_html( $company_tel_note ); ?>　<span class="lc-info-table__pill">日曜定休</span></td>
+					<td><?php echo esc_html( $company_tel_note ); ?>　<span class="lc-info-table__pill">日曜・祝日定休</span></td>
 				</tr>
 				<tr>
 					<th>設立</th>
@@ -156,7 +156,6 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 				<div class="lc-fee-card__formula">
 					売買価格 × <b>5%</b><span class="lc-fee-card__op">＋ 消費税</span>
 				</div>
-				<span class="lc-fee-card__note">少額の取引・空き地等におすすめ。</span>
 			</article>
 
 			<article class="lc-fee-card">
@@ -166,7 +165,6 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 				<div class="lc-fee-card__formula">
 					売買価格 × <b>4%</b><span class="lc-fee-card__op">＋ 20,000円 ＋ 消費税</span>
 				</div>
-				<span class="lc-fee-card__note">小規模住宅・中古マンション帯。</span>
 			</article>
 
 			<article class="lc-fee-card">
@@ -176,7 +174,6 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 				<div class="lc-fee-card__formula">
 					売買価格 × <b>3%</b><span class="lc-fee-card__op">＋ 60,000円 ＋ 消費税</span>
 				</div>
-				<span class="lc-fee-card__note">戸建て・店舗・土地など主力レンジ。</span>
 			</article>
 		</div>
 
@@ -192,39 +189,6 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 			<p class="lc-fee-tokurei__lead">
 				この特例を適用する場合は、媒介契約の締結前に金額を明示してご説明し、ご了承をいただいた上で契約を締結いたします。無断で特例上限を適用することはありません。
 			</p>
-
-			<table class="lc-fee-tokurei-table" summary="売買価格別の仲介手数料上限額の例">
-				<caption>売買価格別の上限額の例</caption>
-				<thead>
-					<tr>
-						<th scope="col">売買価格</th>
-						<th scope="col">通常の上限<small>速算法・税込</small></th>
-						<th scope="col">特例適用時の上限<small>税込</small></th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>100万円</td>
-						<td>5.5万円</td>
-						<td>33万円</td>
-					</tr>
-					<tr>
-						<td>300万円</td>
-						<td>15.4万円</td>
-						<td>33万円</td>
-					</tr>
-					<tr>
-						<td>500万円</td>
-						<td>23.1万円</td>
-						<td>33万円</td>
-					</tr>
-					<tr>
-						<td>800万円</td>
-						<td>33万円</td>
-						<td>33万円<small>＝通常上限と同額</small></td>
-					</tr>
-				</tbody>
-			</table>
 
 			<p class="lc-fee-foot">
 				※ 800万円を超える売買には本特例は適用されません（上記表の「通常の上限」のみとなります）。<br />
@@ -255,7 +219,6 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 				<h3 class="lc-profile__name">石本 隆一<small>ISHIMOTO RYUICHI</small></h3>
 
 				<ul class="lc-career-list">
-					<li><time>平成 7年 3月</time><strong>札幌学院大学　卒業</strong></li>
 					<li><time>平成12年11月</time><strong>宅地建物取引主任者　資格取得</strong></li>
 					<li><time>平成14年 1月</time><strong>管理業務主任者　資格取得</strong></li>
 					<li><time>平成19年12月</time><strong>株式会社ルーミン・ココ　設立</strong></li>
@@ -283,7 +246,7 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 		?>
 		<div class="lc-access">
 			<div class="lc-access__info">
-				<h3>本社オフィス</h3>
+				<h3>本社事務所</h3>
 				<dl class="lc-access__row">
 					<dt>ADDRESS</dt>
 					<dd><?php echo nl2br( esc_html( $company_addr_raw ) ); ?></dd>
