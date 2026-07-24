@@ -177,8 +177,8 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 			</article>
 		</div>
 
-		<p class="lc-fee-foot">
-			上記は宅地建物取引業法に基づく上限額です。実際のご契約時はお見積りいたします。賃貸物件の仲介手数料は別途、契約形態に応じてご案内します。
+	<p class="lc-fee-foot">
+	上記はあくまで宅地建物取引業法に基づく上限額です。実際のご契約時はその都度お見積りいたします。賃貸物件の仲介手数料は別途、契約形態に応じてご案内します。
 		</p>
 
 		<div class="lc-fee-tokurei">
@@ -191,8 +191,8 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 			</p>
 
 			<p class="lc-fee-foot">
-				※ 800万円を超える売買には本特例は適用されません（上記表の「通常の上限」のみとなります）。<br />
-				※ 上表は法令上の「上限額」であり、実際にいただく金額は物件ごとに事前見積もり・ご説明の上で決定します。
+				※ 800万円を超える売買には本特例は適用されません。<br />
+				※ 実際にいただく金額は必ず物件ごとに事前見積もり・ご説明の上で決定します。
 			</p>
 		</div>
 	</section>
@@ -215,7 +215,7 @@ $company_addr       = implode( '　', array_slice( $company_addr_lines, 0, 2 ) )
 				<span class="lc-profile__photo-cap">REPRESENTATIVE DIRECTOR</span>
 			</div>
 			<div class="lc-profile__body">
-				<span class="lc-profile__role">代表取締役 ／ CEO</span>
+				<span class="lc-profile__role">代表取締役 </span>
 				<h3 class="lc-profile__name">石本 隆一<small>ISHIMOTO RYUICHI</small></h3>
 
 				<ul class="lc-career-list">
