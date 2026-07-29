@@ -221,12 +221,13 @@ add_action( 'wp_enqueue_scripts', function () {
 		$theme_css_ver
 	);
 
-	// Chat FAB
+	// Chat FAB（filemtime でキャッシュバスティング。固定バージョンだと更新のたびに
+	// ブラウザ/CDNキャッシュの古いJSが配信され続けるリスクがあるため）
 	wp_enqueue_script(
 		'lc-chat-fab',
 		get_stylesheet_directory_uri() . '/assets/js/chat-fab.js',
 		array(),
-		$ver,
+		(string) filemtime( get_stylesheet_directory() . '/assets/js/chat-fab.js' ),
 		true
 	);
 	wp_localize_script( 'lc-chat-fab', 'lcChat', array(
@@ -358,17 +359,95 @@ add_filter( 'get_custom_logo', function ( $html ) {
 add_action( 'wp_ajax_lc_dify_chat',        'lc_handle_dify_chat' );
 add_action( 'wp_ajax_nopriv_lc_dify_chat', 'lc_handle_dify_chat' );
 
+/**
+ * Dify の chat-messages ストリーミング応答（SSE, "data: {json}" の連続）をパースし、
+ * 回答文・会話ID・エラーメッセージを取り出す。
+ * agent_message の answer 差分が最後まで空だった場合は、agent_thought の最終回答
+ * （全文がまとまって入っていることがある）をフォールバックとして使う。
+ */
+function lc_parse_dify_stream( $raw ) {
+	$answer        = '';
+	$thought       = '';
+	$conversation  = '';
+	$error_message = '';
+	$lines         = preg_split( "/\r\n|\n|\r/", (string) $raw );
+	foreach ( $lines as $line ) {
+		$line = trim( $line );
+		if ( strpos( $line, 'data:' ) !== 0 ) {
+			continue;
+		}
+		$json = trim( substr( $line, 5 ) );
+		if ( $json === '' || $json === '[DONE]' ) {
+			continue;
+		}
+		$event = json_decode( $json, true );
+		if ( ! is_array( $event ) ) {
+			continue;
+		}
+		$event_type = $event['event'] ?? '';
+		if ( ! empty( $event['answer'] ) && is_string( $event['answer'] ) ) {
+			$answer .= $event['answer'];
+		}
+		if ( $event_type === 'agent_thought' && ! empty( $event['thought'] ) && is_string( $event['thought'] ) ) {
+			$thought = $event['thought'];
+		}
+		if ( $event_type === 'error' && ! empty( $event['message'] ) && is_string( $event['message'] ) ) {
+			$error_message = $event['message'];
+		}
+		if ( ! empty( $event['conversation_id'] ) && is_string( $event['conversation_id'] ) ) {
+			$conversation = $event['conversation_id'];
+		}
+	}
+	$source = 'agent_message';
+	if ( $answer === '' && $thought !== '' ) {
+		$answer = $thought;
+		$source = 'agent_thought_fallback';
+	}
+	return array(
+		'answer'          => $answer,
+		'conversation_id' => $conversation,
+		'error_message'   => $error_message,
+		'answer_source'   => $source,
+	);
+}
+
 function lc_handle_dify_chat() {
 	check_ajax_referer( 'lc_dify_chat', 'nonce' );
+
+	// MCPツール経由での物件検索は数十秒かかることがあるため、
+	// PHP側の実行時間制限（ホスティング既定の30秒等）で処理が打ち切られないよう延長する。
+	if ( function_exists( 'set_time_limit' ) ) {
+		@set_time_limit( 90 );
+	}
+
+	// 管理者がログインした状態でチャットを叩いた場合のみ、応答時間・生レスポンス等の
+	// 診断情報をレスポンスに含める（サーバーのdebug.logにアクセスできない環境向け。
+	// 一般訪問者には表示されない）。
+	$lc_debug_on    = current_user_can( 'manage_options' );
+	$lc_debug_start = microtime( true );
+	$lc_send_error  = function ( $message, $status = null, $extra_debug = array() ) use ( $lc_debug_on, $lc_debug_start ) {
+		$payload = array( 'message' => $message );
+		if ( $lc_debug_on ) {
+			$payload['debug'] = array_merge(
+				array( 'elapsed_sec' => round( microtime( true ) - $lc_debug_start, 2 ) ),
+				$extra_debug
+			);
+		}
+		if ( $status !== null ) {
+			wp_send_json_error( $payload, $status );
+		} else {
+			wp_send_json_error( $payload );
+		}
+	};
 
 	$query           = sanitize_text_field( wp_unslash( $_POST['query'] ?? '' ) );
 	$conversation_id = sanitize_text_field( wp_unslash( $_POST['conversation_id'] ?? '' ) );
 
 	if ( empty( $query ) ) {
-		wp_send_json_error( __( 'メッセージを入力してください', 'syn-ownd-child' ), 400 );
+		$lc_send_error( __( 'メッセージを入力してください', 'syn-ownd-child' ), 400 );
 	}
 	if ( empty( LC_DIFY_API_KEY ) ) {
-		wp_send_json_error( __( 'チャット機能が現在利用できません', 'syn-ownd-child' ), 503 );
+		$lc_send_error( __( 'チャット機能が現在利用できません', 'syn-ownd-child' ), 503 );
 	}
 
 	$payload = array(
@@ -390,16 +469,23 @@ function lc_handle_dify_chat() {
 					'Content-Type'  => 'application/json',
 				),
 				'body'    => wp_json_encode( $request_payload ),
-				'timeout' => 30,
+				// MCPツールでのroominkoko.jp実データ検索は30秒近くかかることがあるため余裕を持たせる
+				'timeout' => 60,
 			)
 		);
 	};
+
+	$lc_used_streaming = false;
 
 	$response = $request_chat( $payload );
 
 	if ( is_wp_error( $response ) ) {
 		error_log( '[LC Dify Chat] WP_Error: ' . $response->get_error_message() );
-		wp_send_json_error( __( '通信エラーが発生しました', 'syn-ownd-child' ) );
+		$lc_send_error( __( '通信エラーが発生しました', 'syn-ownd-child' ), null, array(
+			'stage'         => 'blocking_request',
+			'wp_error'      => $response->get_error_message(),
+			'query_length'  => strlen( $query ),
+		) );
 	}
 
 	$code = wp_remote_retrieve_response_code( $response );
@@ -416,53 +502,76 @@ function lc_handle_dify_chat() {
 
 	// Agent Chat App は blocking 非対応のため、該当エラー時のみ streaming へフォールバック。
 	if ( $code !== 200 && stripos( $dify_message, 'does not support blocking mode' ) !== false ) {
-		$payload['response_mode'] = 'streaming';
-		$response                 = $request_chat( $payload );
-		if ( is_wp_error( $response ) ) {
-			error_log( '[LC Dify Chat] streaming WP_Error: ' . $response->get_error_message() );
-			wp_send_json_error( __( '通信エラーが発生しました', 'syn-ownd-child' ) );
-		}
-		$code = wp_remote_retrieve_response_code( $response );
-		$raw  = wp_remote_retrieve_body( $response );
-		$body = json_decode( $raw, true );
+		$lc_used_streaming = true;
+		$dify_message      = ''; // blocking拒否メッセージは役目を終えたのでリセットし、streaming側の結果で上書きする
+		$stream_payload    = $payload;
+		$stream_payload['response_mode'] = 'streaming';
+		$stream_result     = null;
+		$retried_fresh     = false;
 
-		// streaming は SSE 形式なので、"data: {json}" 各行をパースして answer を結合する。
-		if ( $code === 200 && ! is_array( $body ) ) {
-			$answer_from_stream = '';
-			$conv_from_stream   = '';
-			$lines              = preg_split( "/\r\n|\n|\r/", (string) $raw );
-			foreach ( $lines as $line ) {
-				$line = trim( $line );
-				if ( strpos( $line, 'data:' ) !== 0 ) {
-					continue;
-				}
-				$json = trim( substr( $line, 5 ) );
-				if ( $json === '' || $json === '[DONE]' ) {
-					continue;
-				}
-				$event = json_decode( $json, true );
-				if ( ! is_array( $event ) ) {
-					continue;
-				}
-				if ( ! empty( $event['answer'] ) && is_string( $event['answer'] ) ) {
-					$answer_from_stream .= $event['answer'];
-				}
-				if ( ! empty( $event['conversation_id'] ) && is_string( $event['conversation_id'] ) ) {
-					$conv_from_stream = $event['conversation_id'];
-				}
-			}
-			if ( $answer_from_stream !== '' ) {
-				wp_send_json_success( array(
-					'answer'          => $answer_from_stream,
-					'conversation_id' => $conv_from_stream,
+		for ( $attempt = 0; $attempt < 2; $attempt++ ) {
+			$response = $request_chat( $stream_payload );
+			if ( is_wp_error( $response ) ) {
+				error_log( '[LC Dify Chat] streaming WP_Error: ' . $response->get_error_message() );
+				$lc_send_error( __( '通信エラーが発生しました', 'syn-ownd-child' ), null, array(
+					'stage'    => 'streaming_request',
+					'wp_error' => $response->get_error_message(),
 				) );
 			}
+			$code = wp_remote_retrieve_response_code( $response );
+			$raw  = wp_remote_retrieve_body( $response );
+			$body = json_decode( $raw, true );
+
+			if ( $code !== 200 || is_array( $body ) ) {
+				break;
+			}
+
+			// streaming は SSE 形式なので、"data: {json}" 各行をパースして answer を結合する。
+			$stream_result = lc_parse_dify_stream( $raw );
+			if ( $stream_result['answer'] !== '' ) {
+				break;
+			}
+
+			// 会話履歴がモデルのコンテキスト長を超過している場合、その会話IDを使い続ける限り
+			// 何度送っても必ず失敗する（履歴は積み上がる一方のため）。会話IDを外して
+			// 新しい会話として1回だけ自動的にリトライし、ユーザーに自己修復させる。
+			if ( $attempt === 0
+				&& ! empty( $stream_payload['conversation_id'] )
+				&& stripos( $stream_result['error_message'], 'context_length_exceeded' ) !== false
+			) {
+				unset( $stream_payload['conversation_id'] );
+				$retried_fresh = true;
+				continue;
+			}
+			break;
+		}
+
+		if ( $stream_result && $stream_result['answer'] !== '' ) {
+			$success_payload = array(
+				'answer'          => $stream_result['answer'],
+				'conversation_id' => $stream_result['conversation_id'],
+			);
+			if ( $lc_debug_on ) {
+				$success_payload['debug'] = array(
+					'elapsed_sec'   => round( microtime( true ) - $lc_debug_start, 2 ),
+					'answer_source' => $stream_result['answer_source'],
+					'query_length'  => strlen( $query ),
+					'retried_fresh' => $retried_fresh,
+				);
+			}
+			wp_send_json_success( $success_payload );
+		}
+
+		if ( $stream_result && $stream_result['error_message'] ) {
+			$dify_message = $stream_result['error_message'];
 		}
 	}
 
 	if ( $code !== 200 || empty( $body['answer'] ) ) {
-		$dify_message = '';
+		// streaming 側で lc_parse_dify_stream() が拾った error イベントのメッセージがあれば
+		// それを優先する（$body は SSE の生テキストなので is_array() は常に false になる）。
 		if ( is_array( $body ) ) {
+			$dify_message = '';
 			if ( ! empty( $body['message'] ) ) {
 				$dify_message = (string) $body['message'];
 			} elseif ( ! empty( $body['error'] ) ) {
@@ -483,13 +592,26 @@ function lc_handle_dify_chat() {
 		} else {
 			$public_error .= ' (HTTP ' . (int) $code . ')';
 		}
-		wp_send_json_error( $public_error );
+		$lc_send_error( $public_error, null, array(
+			'stage'            => $lc_used_streaming ? 'streaming_parse' : 'blocking_response',
+			'http_code'        => (int) $code,
+			'query_length'     => strlen( $query ),
+			'raw_snippet'      => is_string( $raw ) ? mb_substr( $raw, 0, 2000 ) : '(non-string body)',
+		) );
 	}
 
-	wp_send_json_success( array(
+	$final_success = array(
 		'answer'          => $body['answer'],
 		'conversation_id' => $body['conversation_id'] ?? '',
-	) );
+	);
+	if ( $lc_debug_on ) {
+		$final_success['debug'] = array(
+			'elapsed_sec'   => round( microtime( true ) - $lc_debug_start, 2 ),
+			'answer_source' => 'blocking_response',
+			'query_length'  => strlen( $query ),
+		);
+	}
+	wp_send_json_success( $final_success );
 }
 
 /* =============================================================
@@ -1633,6 +1755,24 @@ function lc_format_price( $raw ) {
 	$man = floatval( $raw ) / 10000;
 	$str = rtrim( rtrim( number_format( $man, 4, '.', ',' ), '0' ), '.' );
 	return $str . '万円';
+}
+
+/**
+ * fudou プラグイン純正の my_custom_*_print() 系関数（plugins/fudou/inc/inc-single-fudo.php）の
+ * echo 出力をバッファリングして文字列として取得する。
+ *
+ * コード値→日本語ラベルの変換ロジックをプラグイン本体に任せられるため、
+ * 物件詳細ページの詳細項目表示で多用する（single-fudo.php 参照）。
+ *
+ * @param string $callback 呼び出す関数名（例: 'my_custom_torihikitaiyo_print'）
+ * @param int    $post_id
+ * @return string 空文字の場合は該当データなし、または関数未読み込み
+ */
+function lc_fudo_capture_print( $callback, $post_id ) {
+	if ( ! function_exists( $callback ) ) { return ''; }
+	ob_start();
+	call_user_func( $callback, $post_id );
+	return trim( (string) ob_get_clean() );
 }
 
 function lc_render_property_block_card( $post_id, $tag_class = 'tag-rent', $tag_label = '賃貸', $display_items = array(), $button_text = '物件詳細を見る', $newup_days = 14 ) {

@@ -157,6 +157,7 @@
 .tag-sale{ background:#E3F3EC; color:#0F825D; }
 .tag-pickup{ background:#FBF1D2; color:#B8861A; }
 .tag-new{ background:#D63C26; color:#fff; }
+.tag-type{ background:#EDEEF2; color:#3D4459; }
 
 /* 価格 + メタ */
 .bukken-meta{ order:3; padding:10px 18px 0; display:flex; align-items:baseline; gap:4px; flex-wrap:wrap; margin:0; }
@@ -598,9 +599,34 @@ form.lc-sidebar-search > h3{
 .lc-chatmsg{ display:flex; }
 .lc-chatmsg--user{ justify-content:flex-end; }
 .lc-chatmsg--ai{ justify-content:flex-start; }
-.lc-chatmsg__bubble{ max-width:82%; padding:10px 14px; border-radius:14px; font-size:14px; line-height:1.75; white-space:pre-wrap; word-break:break-word; }
-.lc-chatmsg--user .lc-chatmsg__bubble{ background:var(--color-main); color:#fff; border-bottom-right-radius:4px; }
+.lc-chatmsg__bubble{ max-width:82%; padding:10px 14px; border-radius:14px; font-size:14px; line-height:1.75; word-break:break-word; }
+.lc-chatmsg--user .lc-chatmsg__bubble{ background:var(--color-main); color:#fff; border-bottom-right-radius:4px; white-space:pre-wrap; }
 .lc-chatmsg--ai .lc-chatmsg__bubble{ background:#F4F7F1; color:var(--color-text); border-bottom-left-radius:4px; border:1px solid #DDE5D6; }
+
+/* AI応答の簡易Markdown整形（chat-fab.js の renderMarkdown が出力するタグ） */
+.lc-chatmsg--ai .lc-chatmsg__bubble p{ margin:0 0 10px; }
+.lc-chatmsg--ai .lc-chatmsg__bubble p:last-child{ margin-bottom:0; }
+.lc-chatmsg--ai .lc-chatmsg__bubble h2,
+.lc-chatmsg--ai .lc-chatmsg__bubble h3,
+.lc-chatmsg--ai .lc-chatmsg__bubble h4{ margin:12px 0 6px; font-size:1em; font-weight:700; color:var(--color-text); }
+.lc-chatmsg--ai .lc-chatmsg__bubble h2:first-child,
+.lc-chatmsg--ai .lc-chatmsg__bubble h3:first-child,
+.lc-chatmsg--ai .lc-chatmsg__bubble h4:first-child{ margin-top:0; }
+.lc-chatmsg--ai .lc-chatmsg__bubble strong{ font-weight:700; color:var(--color-text); }
+.lc-chatmsg--ai .lc-chatmsg__bubble ul,
+.lc-chatmsg--ai .lc-chatmsg__bubble ol{ margin:0 0 10px; padding-left:1.4em; }
+.lc-chatmsg--ai .lc-chatmsg__bubble ul:last-child,
+.lc-chatmsg--ai .lc-chatmsg__bubble ol:last-child{ margin-bottom:0; }
+.lc-chatmsg--ai .lc-chatmsg__bubble li{ margin:2px 0; }
+.lc-chatmsg--ai .lc-chatmsg__bubble a{ color:var(--color-link); text-decoration:underline; word-break:break-all; }
+.lc-chatmsg--ai .lc-chatmsg__bubble code{ background:rgba(8,89,63,.08); border-radius:4px; padding:1px 5px; font-size:.92em; font-family:Consolas, Monaco, monospace; }
+.lc-chatmsg--ai .lc-chatmsg__bubble pre{ background:rgba(8,89,63,.08); border-radius:8px; padding:10px 12px; overflow-x:auto; margin:0 0 10px; }
+.lc-chatmsg--ai .lc-chatmsg__bubble pre code{ background:none; padding:0; }
+.lc-chatmsg--ai .lc-chatmsg__bubble table{ display:block; overflow-x:auto; margin:0 0 10px; border-collapse:collapse; font-size:.92em; white-space:nowrap; }
+.lc-chatmsg--ai .lc-chatmsg__bubble th,
+.lc-chatmsg--ai .lc-chatmsg__bubble td{ border:1px solid #DDE5D6; padding:6px 10px; text-align:left; }
+.lc-chatmsg--ai .lc-chatmsg__bubble th{ background:var(--color-elight01); color:var(--color-text); font-weight:700; }
+.lc-chatmsg--ai .lc-chatmsg__bubble img{ display:block; max-width:100%; height:auto; border-radius:var(--round-common); margin:0 0 10px; }
 
 /* ローディングドット */
 .lc-chatmsg__dots{ display:inline-flex; align-items:center; gap:4px; height:18px; }
@@ -740,6 +766,10 @@ form.lc-sidebar-search > h3{
 #list_simplepage2 .list_detail table th{ background:var(--fudou--table-background-color); color:var(--color-main); font-weight:600; width:130px; }
 #list_simplepage2 .list_detail table td{ color:var(--color-text); background:#fff; }
 #list_simplepage2 .list_detail .twocol{ display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+#list_simplepage2 .list_detail table tr.lc-table-divider td{ background:var(--c-green-soft); color:var(--c-green-dark); font-weight:600; font-size:12px; letter-spacing:.08em; padding:8px 16px; border-color:var(--fudou--table-border-color); }
+
+.lc-surroundings{ margin-top:16px; padding-top:16px; border-top:1px solid var(--fudou--table-border-color); }
+.lc-surroundings p{ margin:0 0 6px; }
 
 .lc-facility{ display:flex; flex-wrap:wrap; gap:8px; }
 .lc-facility span{ display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border:1px solid #DDE5D6; border-radius:9999px; font-size:13px; color:var(--color-text); background:#F9FBF6; }

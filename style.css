@@ -353,6 +353,102 @@ h1,h2,h3,h4,h5,h6,
   background: color-mix(in srgb, var(--c-brick) 85%, #000) !important;
 }
 
+/* 汎用 Contact Form 7 スタイル（#contact_form の外、/contact/ ページ等にも適用） */
+.wpcf7-form{
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 640px;
+}
+.wpcf7-form p{
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text);
+}
+.wpcf7-form input[type="text"],
+.wpcf7-form input[type="email"],
+.wpcf7-form input[type="tel"],
+.wpcf7-form input[type="url"],
+.wpcf7-form textarea,
+.wpcf7-form select{
+  border: 1px solid var(--fudou--select-input-border-color);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #fff;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.wpcf7-form textarea{ min-height: 160px; resize: vertical; }
+.wpcf7-form input:focus,
+.wpcf7-form textarea:focus,
+.wpcf7-form select:focus{
+  outline: none;
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 3px rgba(15,130,93,.18);
+}
+.wpcf7-form input.wpcf7-not-valid,
+.wpcf7-form textarea.wpcf7-not-valid{
+  border-color: var(--c-brick);
+}
+.wpcf7-form .wpcf7-not-valid-tip{
+  color: var(--c-brick);
+  font-size: 12px;
+}
+.wpcf7-form .wpcf7-list-item{
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.wpcf7-form input[type="checkbox"],
+.wpcf7-form input[type="radio"]{
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  accent-color: var(--color-main);
+  flex-shrink: 0;
+}
+.wpcf7-form .wpcf7-spinner{ margin-left: 10px; }
+.wpcf7-response-output{
+  border-radius: var(--round-common);
+  padding: 14px 18px;
+  font-size: 14px;
+  margin: 16px 0 0;
+  border: 1px solid var(--fudou--table-border-color);
+}
+.wpcf7-form.sent .wpcf7-response-output{
+  border-color: var(--color-main);
+  background: var(--color-elight01);
+  color: var(--color-edark01);
+}
+.wpcf7-form.invalid .wpcf7-response-output,
+.wpcf7-form.unaccepted .wpcf7-response-output,
+.wpcf7-form.spam .wpcf7-response-output,
+.wpcf7-form.payment-required .wpcf7-response-output{
+  border-color: var(--c-brick);
+  background: var(--c-brick-100);
+  color: var(--c-brick);
+}
+
+/* デスクトップ: お名前・メールアドレスを2カラムに（フィールド順が固定のため nth-of-type で指定） */
+@media (min-width: 640px){
+  .wpcf7-form{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 20px;
+    row-gap: 18px;
+    max-width: 720px;
+  }
+  .wpcf7-form p:nth-of-type(n+3){ grid-column: 1 / -1; }
+}
+
 /* マッチングメール条件登録ボタン */
 #main #maching_mail a{
   background: var(--color-main) !important;
