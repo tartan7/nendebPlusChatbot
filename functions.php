@@ -245,6 +245,18 @@ add_action( 'wp_enqueue_scripts', function () {
 		true
 	);
 
+	// 物件詳細ページ：写真ギャラリーのライトボックス
+	if ( is_singular( 'fudo' ) ) {
+		$gallery_js = get_stylesheet_directory() . '/assets/js/lc-gallery.js';
+		wp_enqueue_script(
+			'lc-gallery',
+			get_stylesheet_directory_uri() . '/assets/js/lc-gallery.js',
+			array(),
+			file_exists( $gallery_js ) ? (string) filemtime( $gallery_js ) : '1',
+			true
+		);
+	}
+
 	// 物件一覧の地図ビュー（Leaflet + OpenStreetMap）
 	if ( is_post_type_archive( 'fudo' ) || is_tax( array( 'bukken', 'bukken_tag' ) ) ) {
 		wp_enqueue_style( 'leaflet', 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4' );

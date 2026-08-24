@@ -176,16 +176,16 @@ while ( have_posts() ) : the_post();
 			<?php endif; ?>
 
 			<?php if ( $gallery_count > 0 ) : ?>
-			<div class="lc-gallery lc-gallery--count-<?php echo min( 5, (int) $gallery_count ); ?>">
+			<div class="lc-gallery lc-gallery--count-<?php echo min( 5, (int) $gallery_count ); ?>" data-lc-gallery data-photos="<?php echo esc_attr( wp_json_encode( array_values( $gallery_urls ) ) ); ?>">
 				<?php
 				// 表示は最大 5 枚（main 1 + サブ 4）、それ以外は最後のセルに「すべて見る」ボタンを重ねて隠す。
 				$shown_max = min( 5, $gallery_count );
 				for ( $i = 0; $i < $shown_max; $i++ ) :
 					$cell_cls = ( $i === 0 ) ? 'lc-gallery__cell lc-gallery__cell--main' : 'lc-gallery__cell';
 				?>
-					<div class="<?php echo esc_attr( $cell_cls ); ?>" style="background-image:url('<?php echo esc_url( $gallery_urls[ $i ] ); ?>');">
+					<button type="button" class="<?php echo esc_attr( $cell_cls ); ?>" style="background-image:url('<?php echo esc_url( $gallery_urls[ $i ] ); ?>');" data-index="<?php echo (int) $i; ?>" aria-label="<?php echo esc_attr( sprintf( '写真 %d 枚目を拡大表示', $i + 1 ) ); ?>">
 						<?php if ( $i === 4 && $gallery_count > 5 ) : ?>
-							<button class="lc-gallery__more" type="button" aria-label="すべての写真を見る">
+							<span class="lc-gallery__more" aria-hidden="true">
 								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 									<rect x="3" y="3" width="7" height="7" rx="1"/>
 									<rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -193,9 +193,9 @@ while ( have_posts() ) : the_post();
 									<rect x="14" y="14" width="7" height="7" rx="1"/>
 								</svg>
 								すべての写真を見る（<?php echo (int) $gallery_count; ?>枚）
-							</button>
+							</span>
 						<?php endif; ?>
-					</div>
+					</button>
 				<?php endfor; ?>
 			</div>
 			<?php endif; ?>

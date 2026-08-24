@@ -10,7 +10,7 @@
 
 /* ---------- 0. リセット & ベース ---------- */
 .lc-app, .lc-app *{ box-sizing: border-box; }
-.lc-app{ font-family: var(--font-body, "Noto Sans JP", sans-serif); color: var(--color-text); background: var(--color-background-body); }
+.lc-app{ font-family: var(--font-body, "Noto Sans JP", sans-serif); color: var(--color-text); background: var(--color-background-body); overflow-x: hidden; }
 .lc-app a{ color: var(--color-link); text-decoration: none; }
 .lc-app a:hover{ text-decoration: underline; }
 .lc-app img{ max-width: 100%; display: block; }
@@ -726,10 +726,13 @@ form.lc-sidebar-search > h3{
 .lc-detail-hero__addr::before{ content:""; display:inline-block; width:14px; height:14px; background:var(--color-main); mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>') center/contain no-repeat; -webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>') center/contain no-repeat; }
 
 .lc-gallery{ display:grid; grid-template-columns:2fr 1fr 1fr; grid-template-rows:repeat(2, 220px); gap:8px; border-radius:14px; overflow:hidden; }
-.lc-gallery__cell{ background:#DDE5D6 center/cover no-repeat; position:relative; }
+.lc-gallery__cell{ appearance:none; -webkit-appearance:none; background:#DDE5D6 center/cover no-repeat; position:relative; display:block; width:100%; height:100%; padding:0; margin:0; border:none; font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.lc-gallery__cell::after{ content:""; position:absolute; inset:0; background:rgba(0,0,0,0); transition:background .15s ease; }
+.lc-gallery__cell:hover::after, .lc-gallery__cell:focus-visible::after{ background:rgba(0,0,0,.12); }
+.lc-gallery__cell:focus-visible{ outline:2px solid #fff; outline-offset:-4px; box-shadow:0 0 0 4px var(--color-main); }
 .lc-gallery__cell--main{ grid-column:1; grid-row:1 / span 2; }
-.lc-gallery__more{ position:absolute; inset:0; background:rgba(15,74,42,.7); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:600; font-size:15px; cursor:pointer; border:none; transition:background .15s ease; }
-.lc-gallery__more:hover{ background:rgba(8,89,63,.82); }
+.lc-gallery__more{ position:absolute; inset:0; background:rgba(15,74,42,.7); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:600; font-size:15px; transition:background .15s ease; z-index:1; }
+.lc-gallery__cell:hover .lc-gallery__more, .lc-gallery__cell:focus-visible .lc-gallery__more{ background:rgba(8,89,63,.82); }
 /* 画像枚数別レイアウト: 5枚未満でもグリッド穴が目立たないように main 幅を広げる */
 .lc-gallery--count-1{ grid-template-columns:1fr; grid-template-rows:440px; }
 .lc-gallery--count-1 .lc-gallery__cell--main{ grid-column:1; grid-row:1; }
@@ -739,6 +742,18 @@ form.lc-sidebar-search > h3{
 .lc-gallery--count-3 .lc-gallery__cell--main{ grid-column:1; grid-row:1 / span 2; }
 .lc-gallery--count-4{ grid-template-columns:2fr 1fr 1fr; grid-template-rows:repeat(2, 220px); }
 .lc-gallery--count-4 .lc-gallery__cell--main{ grid-column:1; grid-row:1 / span 2; }
+
+/* ギャラリー・ライトボックス（assets/js/lc-gallery.js が生成） */
+.lc-lightbox{ position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(6,20,14,.92); opacity:0; pointer-events:none; transition:opacity .25s ease; }
+.lc-lightbox.is-open{ opacity:1; pointer-events:auto; }
+.lc-lightbox__stage{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:64px 72px; box-sizing:border-box; }
+.lc-lightbox__img{ max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; box-shadow:0 24px 64px rgba(0,0,0,.4); user-select:none; }
+.lc-lightbox__close, .lc-lightbox__prev, .lc-lightbox__next{ position:absolute; background:rgba(255,255,255,.12); color:#fff; border:none; border-radius:9999px; width:48px; height:48px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .15s ease; }
+.lc-lightbox__close:hover, .lc-lightbox__prev:hover, .lc-lightbox__next:hover{ background:rgba(255,255,255,.25); }
+.lc-lightbox__close{ top:16px; right:16px; }
+.lc-lightbox__prev{ left:16px; top:50%; transform:translateY(-50%); }
+.lc-lightbox__next{ right:16px; top:50%; transform:translateY(-50%); }
+.lc-lightbox__counter{ position:absolute; left:50%; bottom:18px; transform:translateX(-50%); color:#fff; font-size:13px; letter-spacing:.06em; background:rgba(0,0,0,.35); padding:5px 14px; border-radius:9999px; font-variant-numeric:tabular-nums; }
 
 .lc-price-card{ background:linear-gradient(135deg, #FBE5E0 0%, #FFF7F4 100%); border-radius:14px; padding:24px 28px; margin-bottom:24px; display:grid; grid-template-columns:auto 1fr; gap:32px; align-items:center; border:1px solid #F4D2CB; }
 .lc-price-card.is-sale{ background:linear-gradient(135deg, #E3F3EC 0%, #F4F7F1 100%); border-color:#C7DECE; }
@@ -894,6 +909,11 @@ form.lc-sidebar-search > h3{
   .lc-main{ padding-top:24px; }
   .home .lc-main{ padding-top:24px; }
 
+  /* ヘッダー行の折り返し防止（ロゴ英字サブ表示を隠して幅を詰め、ハンバーガーが右にはみ出すのを防ぐ） */
+  .lc-hdr__inner{ gap:12px; padding:12px 16px; }
+  .lc-hdr__logo-img{ height:40px; }
+  .lc-hdr__logo-en{ display:none; }
+
   /* ハンバーガーを表示 */
   .lc-hdr__burger{ display:flex; }
 
@@ -923,6 +943,13 @@ form.lc-sidebar-search > h3{
   .lc-hdr.is-nav-open .lc-hdr__burger-bar:nth-child(1){ transform:translateY(7px) rotate(45deg); }
   .lc-hdr.is-nav-open .lc-hdr__burger-bar:nth-child(2){ opacity:0; transform:scaleX(0); }
   .lc-hdr.is-nav-open .lc-hdr__burger-bar:nth-child(3){ transform:translateY(-7px) rotate(-45deg); }
+
+  /* ライトボックス：モバイルはボタンを小さく、余白を詰める */
+  .lc-lightbox__stage{ padding:56px 12px; }
+  .lc-lightbox__close, .lc-lightbox__prev, .lc-lightbox__next{ width:40px; height:40px; }
+  .lc-lightbox__close{ top:8px; right:8px; }
+  .lc-lightbox__prev{ left:4px; }
+  .lc-lightbox__next{ right:4px; }
 }
 
 /* ============================================================
