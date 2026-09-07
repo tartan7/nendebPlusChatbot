@@ -710,19 +710,56 @@ function lc_get_fudo_meta( $post_id, $keys, $default = '' ) {
 }
 
 /**
+ * fudou 間取り種別コード ⇔ 表示名（例: "50" ⇔ "LDK"）の対応表。
+ * lc_get_fudo_madori_label() / lc_get_fudo_madori_by_kbn() / lc_parse_madori_label() で共有する。
+ *
+ * @return array<string,string> コード => 表示名
+ */
+function lc_fudo_madori_syurui_map() {
+	return array(
+		'10' => 'R', '20' => 'K', '25' => 'SK', '30' => 'DK',
+		'35' => 'SDK', '40' => 'LK', '45' => 'SLK', '50' => 'LDK', '55' => 'SLDK',
+	);
+}
+
+/**
  * fudo 物件の間取りラベルを返す（例: "2LDK"）。
  * fudou プラグインは madorisu（部屋数）と madorisyurui（種別コード）を別々に保存する。
  */
 function lc_get_fudo_madori_label( $post_id ) {
-	static $syurui_map = array(
-		'10' => 'R', '20' => 'K', '25' => 'SK', '30' => 'DK',
-		'35' => 'SDK', '40' => 'LK', '45' => 'SLK', '50' => 'LDK', '55' => 'SLDK',
-	);
+	$syurui_map = lc_fudo_madori_syurui_map();
 	$su = trim( (string) get_post_meta( $post_id, 'madorisu',     true ) );
 	$sy = trim( (string) get_post_meta( $post_id, 'madorisyurui', true ) );
 	if ( $su === '' && $sy === '' ) { return ''; }
 	$name = isset( $syurui_map[ $sy ] ) ? $syurui_map[ $sy ] : '';
 	return $su . $name;
+}
+
+/**
+ * 間取りラベル（例: "2LDK", "4LDK+"）を madorisu / madorisyurui のメタ条件に変換する。
+ * 末尾の "+" は「N部屋以上」を意味し、madorisu の比較を ">=" にする
+ * （lc_get_fudo_madori_by_kbn() が生成する実データ由来のラベルには付かないが、
+ *   旧リンク等で mado=4LDK+ のような値が渡された場合の後方互換として扱う）。
+ *
+ * @param string $label
+ * @return array{su:string, sy:string, su_gte:bool}|null 解釈できなければ null
+ */
+function lc_parse_madori_label( $label ) {
+	$label = strtoupper( trim( (string) $label ) );
+	$gte   = false;
+	if ( substr( $label, -1 ) === '+' ) {
+		$gte   = true;
+		$label = substr( $label, 0, -1 );
+	}
+	if ( ! preg_match( '/^(\d+)([A-Z]+)$/', $label, $m ) ) { return null; }
+
+	static $reverse = null;
+	if ( $reverse === null ) {
+		$reverse = array_flip( lc_fudo_madori_syurui_map() );
+	}
+	if ( ! isset( $reverse[ $m[2] ] ) ) { return null; }
+
+	return array( 'su' => $m[1], 'sy' => $reverse[ $m[2] ], 'su_gte' => $gte );
 }
 
 function lc_render_fudo_card( $tag_class = 'tag-rent', $tag_label = '賃貸' ) {
@@ -737,7 +774,8 @@ function lc_render_fudo_card( $tag_class = 'tag-rent', $tag_label = '賃貸' ) {
 
 	$price   = lc_get_fudo_meta( $post_id, array( 'kakaku', 'price', 'bukken_kakaku' ) );
 	$madori  = lc_get_fudo_madori_label( $post_id );
-	$menseki = lc_get_fudo_meta( $post_id, array( 'menseki', 'area', 'senyu_menseki' ) );
+	// fudou プラグイン本体の実キーは 'tatemonomenseki'（専有面積）／'tochikukaku'（土地面積・売地）
+	$menseki = lc_format_menseki( lc_get_fudo_meta( $post_id, array( 'tatemonomenseki', 'tochikukaku', 'menseki', 'area', 'senyu_menseki' ) ) );
 	$address = lc_get_fudo_meta( $post_id, array( 'shozaichimeisho', 'shozaichi', 'address', 'jusho' ) );
 	$chiku   = lc_get_fudo_meta( $post_id, array( 'chikunen', 'chiku', 'built_year', 'kenchiku_nen' ) );
 	$kouzou  = lc_get_fudo_meta( $post_id, array( 'kouzou', 'structure' ) );
@@ -833,6 +871,33 @@ function lc_parse_price( $str ) {
 }
 
 /**
+ * 絞り込みフォームの価格欄（price_min / price_max）を円単位の整数に変換する。
+ *
+ * 絞り込みフォームの価格欄は見出し（$price_label_init）で常に「万円」単位と
+ * 明示しており、ユーザーは通常 "3000" のように単位を付けずに入力する。
+ * lc_parse_price() は文字列に「万」が含まれるかどうかで単位を推測するため、
+ * 単位無しの数値は「すでに円単位」と解釈されてしまう。以前はこれを
+ * 「10000未満なら万円とみなして10000倍する」という閾値判定で補っていたが、
+ * 1億円（10000万円）以上の売買物件を下限・上限に指定すると閾値を超えて
+ * 判定が働かず、単位が1万倍ズレたまま検索されるバグがあった。
+ * この関数は絞り込みフォームの入力を常に万円単位として扱うことで、
+ * 金額の大小に関わらず正しく円単位へ変換する。
+ *
+ * @param string $str 万円単位の数値文字列（"3000" "3,000" "3000万円" など）。
+ * @return int 円単位の整数。パース不能なら 0。
+ */
+function lc_parse_price_man( $str ) {
+	if ( ! is_string( $str ) && ! is_numeric( $str ) ) { return 0; }
+
+	$s = mb_convert_kana( (string) $str, 'n', 'UTF-8' );
+	$s = str_replace( array( ',', ' ', '　', '万円', '万' ), '', $s );
+	$num = preg_replace( '/[^0-9.]/', '', $s );
+	if ( $num === '' ) { return 0; }
+
+	return (int) round( (float) $num * 10000 );
+}
+
+/**
  * 日本の住所文字列を「市区町村」と「字・丁目より前の地区名」に分割する。
  *
  *   "稚内市末広2丁目"     → array( 'city' => '稚内市', 'area' => '末広' )
@@ -887,6 +952,10 @@ function lc_get_fudo_areas( $limit = 20, $normalize = true ) {
 	$cached    = wp_cache_get( $cache_key, 'lc_fudo' );
 	if ( is_array( $cached ) ) { return $cached; }
 
+	// SQL 側では絞り込まず全件取得し、正規化・集計・上位N件抽出は PHP 側で行う。
+	// 先に生の住所文字列単位で ORDER BY cnt DESC LIMIT すると、同じ地区が
+	// 複数の丁目・番地に分かれて登録されている場合に正規化後の合計件数が
+	// 実際より少なく表示される（一部の地区が候補から丸ごと漏れる）ため。
 	$rows = $wpdb->get_results( $wpdb->prepare(
 		"SELECT pm.meta_value AS addr, COUNT(*) AS cnt
 		 FROM {$wpdb->postmeta} pm
@@ -895,10 +964,8 @@ function lc_get_fudo_areas( $limit = 20, $normalize = true ) {
 		   AND pm.meta_value <> ''
 		   AND p.post_type = %s
 		   AND p.post_status = %s
-		 GROUP BY pm.meta_value
-		 ORDER BY cnt DESC
-		 LIMIT %d",
-		'shozaichimeisho', 'fudo', 'publish', max( 1, (int) $limit ) * 4
+		 GROUP BY pm.meta_value",
+		'shozaichimeisho', 'fudo', 'publish'
 	) );
 
 	$areas = array();
@@ -1060,6 +1127,8 @@ function lc_get_fudo_areas_by_kbn( $kbn = '', $limit = 30, $normalize = true ) {
 	if ( is_array( $cached ) ) { return $cached; }
 
 	$between = ( $kbn === 'rent' ) ? '3000 AND 3999' : '1000 AND 1999';
+	// SQL 側では絞り込まず全件取得し、正規化・集計・上位N件抽出は PHP 側で行う
+	// （lc_get_fudo_areas() と同じ理由。丁目・番地違いによる取りこぼしを防ぐ）
 	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $between is hardcoded
 	$rows = $wpdb->get_results( $wpdb->prepare(
 		"SELECT pm.meta_value AS addr, COUNT(*) AS cnt
@@ -1072,10 +1141,8 @@ function lc_get_fudo_areas_by_kbn( $kbn = '', $limit = 30, $normalize = true ) {
 		   AND p.post_type = %s
 		   AND p.post_status = %s
 		   AND (pm_kbn.meta_value + 0) BETWEEN $between
-		 GROUP BY pm.meta_value
-		 ORDER BY cnt DESC
-		 LIMIT %d",
-		'shozaichimeisho', 'fudo', 'publish', max( 1, (int) $limit ) * 4
+		 GROUP BY pm.meta_value",
+		'shozaichimeisho', 'fudo', 'publish'
 	) );
 
 	$areas = array();
@@ -1102,7 +1169,10 @@ function lc_get_fudo_areas_by_kbn( $kbn = '', $limit = 30, $normalize = true ) {
 /**
  * fudo 物件の間取りリストを kbn でフィルタして返す。
  * fudou プラグインは部屋数を madorisu・種別コードを madorisyurui に分けて保存するため、
- * 両キーを JOIN して組み合わせラベル（例: 2LDK）を生成し、公開物件に実在するもののみ返す。
+ * 両キーを JOIN して組み合わせラベル（例: 2LDK）を生成する。
+ * 固定の「標準間取りリスト」との積集合は取らず、公開物件に実在する組み合わせを
+ * すべてラベル化して返す（そうしないと標準リストに無い間取り（例: 1SK, 2SDK）が
+ * 実在してもフィルターの候補として一切表示されなくなるため）。
  *
  * madorisyurui コード対応: 10=R, 20=K, 25=SK, 30=DK, 35=SDK, 40=LK, 45=SLK, 50=LDK, 55=SLDK
  *
@@ -1110,19 +1180,14 @@ function lc_get_fudo_areas_by_kbn( $kbn = '', $limit = 30, $normalize = true ) {
  * @return string[]
  */
 function lc_get_fudo_madori_by_kbn( $kbn = '' ) {
-	$standard = array( '1R', '1K', '1DK', '1LDK', '2K', '2DK', '2LDK', '3DK', '3LDK', '4LDK', '4LDK+' );
-	$kbn      = sanitize_text_field( $kbn );
+	$kbn = sanitize_text_field( $kbn );
 
 	global $wpdb;
 	$cache_key = 'lc_madori_kbn_' . ( $kbn === '' ? 'all' : $kbn );
 	$cached    = wp_cache_get( $cache_key, 'lc_fudo' );
 	if ( is_array( $cached ) ) { return $cached; }
 
-	// fudou の種別コード → 表示名マッピング（jsonmadori_kensaku.php 準拠）
-	$syurui_map = array(
-		'10' => 'R', '20' => 'K', '25' => 'SK', '30' => 'DK',
-		'35' => 'SDK', '40' => 'LK', '45' => 'SLK', '50' => 'LDK', '55' => 'SLDK',
-	);
+	$syurui_map = lc_fudo_madori_syurui_map();
 
 	if ( $kbn === '' ) {
 		$rows = $wpdb->get_results( $wpdb->prepare(
@@ -1150,22 +1215,24 @@ function lc_get_fudo_madori_by_kbn( $kbn = '' ) {
 		) );
 	}
 
-	// madorisu + syurui_map → ラベル（例: "2LDK"）の集合を構築
-	$db_labels = array();
+	// madorisu + syurui_map → ラベル（例: "2LDK"）の集合を、実データから重複なく構築
+	$labels = array();
 	foreach ( (array) $rows as $r ) {
 		$su = trim( (string) $r->madorisu );
 		$sy = trim( (string) $r->madorisyurui );
-		if ( $su === '' || $sy === '' || ! isset( $syurui_map[ $sy ] ) ) { continue; }
-		$db_labels[ strtoupper( $su . $syurui_map[ $sy ] ) ] = true;
+		if ( $su === '' || $sy === '' || ! ctype_digit( $su ) || ! isset( $syurui_map[ $sy ] ) ) { continue; }
+		$labels[ $su . '|' . $sy ] = $su . $syurui_map[ $sy ];
 	}
 
-	$result = array();
-	foreach ( $standard as $m ) {
-		if ( isset( $db_labels[ strtoupper( $m ) ] ) ) {
-			$result[] = $m;
-		}
-	}
-	if ( empty( $result ) ) { $result = $standard; }
+	// 部屋数 → 種別コード の順で並び替え（例: 1R,1K,1DK,1LDK,2K,2LDK,3LDK...）
+	uksort( $labels, function ( $a, $b ) {
+		list( $a_su, $a_sy ) = explode( '|', $a );
+		list( $b_su, $b_sy ) = explode( '|', $b );
+		if ( (int) $a_su !== (int) $b_su ) { return (int) $a_su <=> (int) $b_su; }
+		return (int) $a_sy <=> (int) $b_sy;
+	} );
+
+	$result = array_values( $labels );
 	wp_cache_set( $cache_key, $result, 'lc_fudo', 5 * MINUTE_IN_SECONDS );
 	return $result;
 }
@@ -1372,26 +1439,14 @@ function lc_build_fudo_query_args( $filters = array() ) {
 	}
 
 	// 間取り — fudou は madorisu（部屋数）と madorisyurui（種別コード）で分けて保存
-	// 標準ラベル→コード対応: 10=R, 20=K, 25=SK, 30=DK, 35=SDK, 40=LK, 45=SLK, 50=LDK, 55=SLDK
+	// ラベル→コードの変換は lc_parse_madori_label() に集約（候補一覧側の
+	// lc_get_fudo_madori_by_kbn() と同じロジックを共有し、両者の対応漏れを防ぐ）
 	if ( ! empty( $filters['mado'] ) ) {
 		$mado_list = array_filter( array_map( 'sanitize_text_field', (array) $filters['mado'] ) );
 		if ( $mado_list ) {
-			$mado_label_map = array(
-				'1R'    => array( 'su' => '1', 'sy' => '10' ),
-				'1K'    => array( 'su' => '1', 'sy' => '20' ),
-				'1DK'   => array( 'su' => '1', 'sy' => '30' ),
-				'1LDK'  => array( 'su' => '1', 'sy' => '50' ),
-				'2K'    => array( 'su' => '2', 'sy' => '20' ),
-				'2DK'   => array( 'su' => '2', 'sy' => '30' ),
-				'2LDK'  => array( 'su' => '2', 'sy' => '50' ),
-				'3DK'   => array( 'su' => '3', 'sy' => '30' ),
-				'3LDK'  => array( 'su' => '3', 'sy' => '50' ),
-				'4LDK'  => array( 'su' => '4', 'sy' => '50' ),
-				'4LDK+' => array( 'su' => '4', 'sy' => '50', 'su_gte' => true ),
-			);
 			$mado_or = array( 'relation' => 'OR' );
 			foreach ( $mado_list as $m ) {
-				$parsed = isset( $mado_label_map[ strtoupper( $m ) ] ) ? $mado_label_map[ strtoupper( $m ) ] : null;
+				$parsed = lc_parse_madori_label( $m );
 				if ( ! $parsed ) { continue; }
 				$mado_or[] = array(
 					'relation' => 'AND',
@@ -1414,12 +1469,10 @@ function lc_build_fudo_query_args( $filters = array() ) {
 		}
 	}
 
-	// 価格範囲 (万円単位 → 円単位)
-	$min = $filters['price_min'] !== '' ? lc_parse_price( $filters['price_min'] ) : null;
-	$max = $filters['price_max'] !== '' ? lc_parse_price( $filters['price_max'] ) : null;
-	// 入力値が "3" のように万円のみだった場合は万円→円へ補正
-	if ( $min !== null && $min > 0 && $min < 10000 ) { $min *= 10000; }
-	if ( $max !== null && $max > 0 && $max < 10000 ) { $max *= 10000; }
+	// 価格範囲 — 絞り込みフォームの入力欄は常に万円単位（$price_label_init）のため
+	// lc_parse_price_man() で常に万円として円単位に変換する（1億円以上も正しく扱える）
+	$min = $filters['price_min'] !== '' ? lc_parse_price_man( $filters['price_min'] ) : null;
+	$max = $filters['price_max'] !== '' ? lc_parse_price_man( $filters['price_max'] ) : null;
 	if ( $min !== null || $max !== null ) {
 		$range = array( 'relation' => 'OR' );
 		foreach ( array( 'kakaku', 'price', 'bukken_kakaku' ) as $k ) {
@@ -1449,24 +1502,38 @@ function lc_build_fudo_query_args( $filters = array() ) {
 		$meta_query[] = $range;
 	}
 
-	// 面積範囲 (m² 単位、menseki 数値メタ)
+	// 面積範囲 (m² 単位)
+	// fudou プラグイン本体が実際に使用するメタキーは 'tatemonomenseki'（専有面積・
+	// 建物系物件）と 'tochikukaku'（土地面積・売地物件）の2つのみ。
+	// 'menseki' / 'area' / 'senyu_menseki' / 'kenchiku_menseki' は本プラグインの
+	// どのバージョンにも存在しないキーで、これらだけを見ていた旧実装では
+	// 面積での絞り込みが常に0件になっていた（該当メタが一切保存されていないため）。
+	// 'tatemonomenseki' / 'tochikukaku' は該当しない物件でも空文字 '' のまま
+	// メタ自体は保存されている（fudou プラグインの保存処理が未入力欄も
+	// update_post_meta するため）。MySQL は CAST('' AS DECIMAL) を 0 として
+	// 扱うため、'<=' の上限判定だけを付けると空文字のメタが常に条件を満たして
+	// しまい、上限のみ指定した際に実際の面積に関わらずヒットしてしまう。
+	// メタ値が空でないことを同じキーに対して AND で必ず確認する。
 	$mmin = $filters['menseki_min'] !== '' ? (float) preg_replace( '/[^0-9.]/', '', (string) $filters['menseki_min'] ) : null;
 	$mmax = $filters['menseki_max'] !== '' ? (float) preg_replace( '/[^0-9.]/', '', (string) $filters['menseki_max'] ) : null;
 	if ( $mmin !== null || $mmax !== null ) {
 		$mens_or = array( 'relation' => 'OR' );
-		foreach ( array( 'menseki', 'area', 'senyu_menseki', 'kenchiku_menseki' ) as $k ) {
+		foreach ( array( 'tatemonomenseki', 'tochikukaku' ) as $k ) {
+			$k_and   = array( 'relation' => 'AND' );
+			$k_and[] = array( 'key' => $k, 'value' => '', 'compare' => '!=' );
 			if ( $mmin !== null && $mmax !== null ) {
-				$mens_or[] = array(
+				$k_and[] = array(
 					'key'     => $k,
 					'value'   => array( $mmin, $mmax ),
 					'compare' => 'BETWEEN',
 					'type'    => 'DECIMAL',
 				);
 			} elseif ( $mmin !== null ) {
-				$mens_or[] = array( 'key' => $k, 'value' => $mmin, 'compare' => '>=', 'type' => 'DECIMAL' );
+				$k_and[] = array( 'key' => $k, 'value' => $mmin, 'compare' => '>=', 'type' => 'DECIMAL' );
 			} elseif ( $mmax !== null ) {
-				$mens_or[] = array( 'key' => $k, 'value' => $mmax, 'compare' => '<=', 'type' => 'DECIMAL' );
+				$k_and[] = array( 'key' => $k, 'value' => $mmax, 'compare' => '<=', 'type' => 'DECIMAL' );
 			}
+			$mens_or[] = $k_and;
 		}
 		if ( count( $mens_or ) > 1 ) {
 			$meta_query[] = $mens_or;
@@ -1770,6 +1837,22 @@ function lc_format_price( $raw ) {
 }
 
 /**
+ * 面積メタの数値に単位「m²」を付けて返す。
+ * fudou プラグインの tatemonomenseki / tochikukaku は数値のみを保存し
+ * 単位を含まないため（single-fudo.php の専有面積表示と同じ規約に合わせる）、
+ * カード等の一覧表示側で明示的に付与する。
+ *
+ * @param mixed $raw lc_get_fudo_meta() 等で取得した生の面積値
+ * @return string 単位付き文字列（空値ならそのまま空文字）
+ */
+function lc_format_menseki( $raw ) {
+	$raw = trim( (string) $raw );
+	if ( $raw === '' ) { return ''; }
+	if ( strpos( $raw, 'm' ) !== false || strpos( $raw, '㎡' ) !== false ) { return $raw; }
+	return $raw . 'm²';
+}
+
+/**
  * fudou プラグイン純正の my_custom_*_print() 系関数（plugins/fudou/inc/inc-single-fudo.php）の
  * echo 出力をバッファリングして文字列として取得する。
  *
@@ -1796,7 +1879,8 @@ function lc_render_property_block_card( $post_id, $tag_class = 'tag-rent', $tag_
 
 	$price         = lc_get_fudo_meta( $post_id, array( 'kakaku', 'price', 'bukken_kakaku' ) );
 	$madori        = lc_get_fudo_madori_label( $post_id );
-	$menseki       = lc_get_fudo_meta( $post_id, array( 'menseki', 'area', 'senyu_menseki' ) );
+	// fudou プラグイン本体の実キーは 'tatemonomenseki'（専有面積）／'tochikukaku'（土地面積・売地）
+	$menseki       = lc_format_menseki( lc_get_fudo_meta( $post_id, array( 'tatemonomenseki', 'tochikukaku', 'menseki', 'area', 'senyu_menseki' ) ) );
 	$address       = lc_get_fudo_meta( $post_id, array( 'shozaichi', 'address', 'jusho' ) );
 	$newup_days    = max( 0, (int) $newup_days );
 	$post_date_u   = get_post_time( 'U', false, $post_id );

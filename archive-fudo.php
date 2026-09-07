@@ -69,7 +69,8 @@ foreach ( $lc_query->posts as $map_post ) {
 			'price'   => lc_format_price( $p_price ),
 			'img'     => ! empty( $p_imgs ) ? $p_imgs[0] : '',
 			'madori'  => lc_get_fudo_madori_label( $pid ),
-			'menseki' => lc_get_fudo_meta( $pid, array( 'menseki', 'senyu_menseki', 'area' ) ),
+			// fudou プラグイン本体の実キーは 'tatemonomenseki'（専有面積）／'tochikukaku'（土地面積・売地）
+			'menseki' => lc_get_fudo_meta( $pid, array( 'tatemonomenseki', 'tochikukaku', 'menseki', 'senyu_menseki', 'area' ) ),
 			'address' => lc_get_fudo_meta( $pid, array( 'shozaichimeisho', 'shozaichi', 'address', 'jusho' ) ),
 		);
 	}
