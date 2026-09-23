@@ -630,7 +630,41 @@ function lc_handle_dify_chat() {
  * 8. ヘルパー：パンくず HTML を出力（プラグイン CustomBreadcrumb があれば優先）
  * ============================================================= */
 function lc_breadcrumb( $extra_class = '' ) {
-	if ( is_callable( array( '\SYNX\Utils\CustomBreadcrumb', 'display' ) ) ) {
+	// 物件詳細（fudo）: 親テーマの pick_breadcrumb_term() は割り当てられた bukken タームを
+	// 名前順で取得し先頭の1件のみ採用するため、親子タームが両方割り当てられている物件では
+	// 親タームが選ばれて子カテゴリがパンくずから欠落する。子テーマ側で末端タームを
+	// 正しく選び直して描画する。
+	if ( is_singular( 'fudo' ) ) {
+		lc_breadcrumb_fudo_single( $extra_class );
+		return;
+	}
+
+	$term_link_ok = true;
+
+	// カテゴリー／タグ／カスタムタクソノミーのアーカイブでは、
+	// 削除済み・不整合なタームへの古いURLアクセス時に get_queried_object() が
+	// WP_Term を返さず null になることがある（クエリ変数は一致するがターム実体がない）。
+	if ( is_category() || is_tag() || is_tax() ) {
+		$queried_obj = get_queried_object();
+
+		if ( ! ( $queried_obj instanceof WP_Term ) ) {
+			$term_link_ok = false;
+		} elseif ( is_wp_error( get_term_link( $queried_obj ) ) ) {
+			$term_link_ok = false;
+		} else {
+			foreach ( (array) get_ancestors( $queried_obj->term_id, $queried_obj->taxonomy, 'taxonomy' ) as $ancestor_id ) {
+				if ( is_wp_error( get_term_link( $ancestor_id, $queried_obj->taxonomy ) ) ) {
+					$term_link_ok = false;
+					break;
+				}
+			}
+		}
+	}
+
+	// 親テーマ CustomBreadcrumb は $wp_obj が null／タームリンク不正の場合に
+	// esc_url_raw(WP_Error) 等で Fatal Error になるため、
+	// 事前チェックで問題があれば子テーマ側フォールバックへ。
+	if ( $term_link_ok && is_callable( array( '\SYNX\Utils\CustomBreadcrumb', 'display' ) ) ) {
 		\SYNX\Utils\CustomBreadcrumb::display( $extra_class );
 		return;
 	}
@@ -653,6 +687,135 @@ function lc_breadcrumb( $extra_class = '' ) {
 	echo '</nav>';
 }
 
+/**
+ * 物件に割り当てられた bukken タームのうち、最も深い（末端の）ものを1件返す。
+ * 親カテゴリと子カテゴリが両方割り当てられているケースでも、子（より具体的な方）を
+ * 優先して選ぶことで、パンくずの階層表示が正しくなるようにする。
+ *
+ * @param int $post_id 物件投稿ID。
+ * @return WP_Term|null
+ */
+function lc_pick_deepest_bukken_term( $post_id ) {
+	$terms = wp_get_post_terms( $post_id, 'bukken' );
+	if ( is_wp_error( $terms ) || empty( $terms ) ) {
+		return null;
+	}
+
+	$deepest       = null;
+	$deepest_depth = -1;
+	foreach ( $terms as $term ) {
+		$depth = count( get_ancestors( $term->term_id, 'bukken', 'taxonomy' ) );
+		if ( $depth > $deepest_depth ) {
+			$deepest_depth = $depth;
+			$deepest       = $term;
+		}
+	}
+	return $deepest;
+}
+
+/**
+ * 物件詳細（fudo）のパンくずを子テーマ側で描画する。
+ * 親テーマ CustomBreadcrumb::display() の pick_breadcrumb_term() が
+ * 親子タームを取り違える不具合を避けつつ、DOM／JSON-LD構造は同等に保つ。
+ *
+ * @param string $extra_class 追加で付与するクラス名。空文字の場合は付与しません。
+ */
+function lc_breadcrumb_fudo_single( $extra_class = '' ) {
+	$post_id    = get_the_ID();
+	$disp_class = $extra_class ? ' ' . esc_attr( $extra_class ) : '';
+	$json_array = array();
+
+	echo '<div class="breadcrumb' . esc_html( $disp_class ) . '"><div class="container breadcrumb__inner"><ol class="breadcrumb__list" aria-label="Breadcrumb">';
+
+	$home_text = get_theme_mod( 'synx_setting_breadcrumb_home', __( 'ホーム', 'syn-ownd-child' ) );
+	echo '<li><a href="' . esc_url( home_url() ) . '"><span>' . esc_html( $home_text ) . '</span></a></li>';
+	$json_array[] = array(
+		'id'   => home_url(),
+		'name' => $home_text,
+	);
+
+	$archive_link  = get_post_type_archive_link( 'fudo' );
+	$post_type_obj = get_post_type_object( 'fudo' );
+	$archive_label = $post_type_obj ? $post_type_obj->label : '物件';
+	if ( $archive_link ) {
+		echo '<li><a href="' . esc_url( $archive_link ) . '"><span>' . esc_html( $archive_label ) . '</span></a></li>';
+		$json_array[] = array(
+			'id'   => $archive_link,
+			'name' => $archive_label,
+		);
+	}
+
+	$term = lc_pick_deepest_bukken_term( $post_id );
+	if ( $term instanceof WP_Term ) {
+		$ancestor_ids = array_reverse( get_ancestors( $term->term_id, 'bukken', 'taxonomy' ) );
+		foreach ( $ancestor_ids as $ancestor_id ) {
+			$ancestor = get_term( $ancestor_id, 'bukken' );
+			if ( ! $ancestor || is_wp_error( $ancestor ) ) {
+				continue;
+			}
+			$link = get_term_link( $ancestor );
+			if ( is_wp_error( $link ) ) {
+				continue;
+			}
+			echo '<li><a href="' . esc_url( $link ) . '"><span>' . esc_html( $ancestor->name ) . '</span></a></li>';
+			$json_array[] = array(
+				'id'   => $link,
+				'name' => $ancestor->name,
+			);
+		}
+
+		$term_link = get_term_link( $term );
+		if ( ! is_wp_error( $term_link ) ) {
+			echo '<li><a href="' . esc_url( $term_link ) . '"><span>' . esc_html( $term->name ) . '</span></a></li>';
+			$json_array[] = array(
+				'id'   => $term_link,
+				'name' => $term->name,
+			);
+		}
+	}
+
+	$post_title = wp_strip_all_tags( apply_filters( 'the_title', get_the_title( $post_id ) ) );
+	echo '<li><span>' . esc_html( $post_title ) . '</span></li>';
+	$json_array[] = array(
+		'id'   => get_permalink( $post_id ),
+		'name' => $post_title,
+	);
+
+	echo '</ol>';
+
+	static $json_ld_output = false;
+	if ( ! $json_ld_output && ! empty( $json_array ) ) {
+		$json_ld_output = true;
+
+		$item_list = array();
+		$pos       = 1;
+		foreach ( $json_array as $data ) {
+			$item_list[] = array(
+				'@type'    => 'ListItem',
+				'position' => $pos,
+				'item'     => array(
+					'@id'  => esc_url_raw( $data['id'] ),
+					'name' => wp_strip_all_tags( (string) $data['name'] ),
+				),
+			);
+			++$pos;
+		}
+
+		$schema = array(
+			'@context'        => 'https://schema.org',
+			'@type'           => 'BreadcrumbList',
+			'itemListElement' => $item_list,
+		);
+
+		$json_ld = wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+		if ( $json_ld ) {
+			echo '<script type="application/ld+json">' . $json_ld . '</script>';
+		}
+	}
+
+	echo '</div></div>';
+}
+
 /* =============================================================
  * 9. 不動産プラグイン互換：post type "fudo" の判定ヘルパー
  *    プラグインのテンプレ階層は archive-fudo.php / single-fudo.php を
@@ -662,8 +825,20 @@ function lc_breadcrumb( $extra_class = '' ) {
 function lc_is_fudo_archive() {
 	// fudou プラグインは 'bukken'（物件カテゴリ・階層）と 'bukken_tag'（物件投稿タグ）のみ登録。
 	// fudo_category / fudo_tag / fudo_area は本プラグインには存在しない。
-	return ( function_exists( 'is_post_type_archive' ) && is_post_type_archive( 'fudo' ) )
-		|| ( function_exists( 'is_tax' ) && ( is_tax( 'bukken' ) || is_tax( 'bukken_tag' ) ) );
+	if ( function_exists( 'is_post_type_archive' ) && is_post_type_archive( 'fudo' ) ) {
+		return true;
+	}
+	if ( ! function_exists( 'is_tax' ) ) {
+		return false;
+	}
+	if ( is_tax( 'bukken' ) || is_tax( 'bukken_tag' ) ) {
+		return true;
+	}
+	// is_tax( $taxonomy ) は内部で get_queried_object() の taxonomy を参照するため、
+	// ターム不整合（削除済み・階層破損・古いURL等）で queried_object が null になると
+	// 誤って false を返す。URL 自体は bukken / bukken_tag のリライトルールに一致して
+	// いるはずなので、生の is_tax() フラグ＋クエリ変数で救済する。
+	return is_tax() && ( '' !== get_query_var( 'bukken' ) || '' !== get_query_var( 'bukken_tag' ) );
 }
 function lc_is_fudo_single() {
 	return is_singular( 'fudo' );
