@@ -662,11 +662,20 @@ function lc_breadcrumb( $extra_class = '' ) {
 	}
 
 	// 親テーマ CustomBreadcrumb は $wp_obj が null／タームリンク不正の場合に
-	// esc_url_raw(WP_Error) 等で Fatal Error になるため、
-	// 事前チェックで問題があれば子テーマ側フォールバックへ。
+	// esc_url_raw(WP_Error) 等で Fatal Error になる。上の事前チェックで防げない
+	// 未知のケース（本番で実際に再発）にも備え、呼び出し自体を try/catch で保護する。
+	// PHP7以降、TypeError 等は \Throwable として捕捉できるため、途中まで出力された
+	// 不完全な HTML は ob_get_clean() で破棄してからフォールバック描画に切り替える。
 	if ( $term_link_ok && is_callable( array( '\SYNX\Utils\CustomBreadcrumb', 'display' ) ) ) {
-		\SYNX\Utils\CustomBreadcrumb::display( $extra_class );
-		return;
+		ob_start();
+		try {
+			\SYNX\Utils\CustomBreadcrumb::display( $extra_class );
+			echo ob_get_clean();
+			return;
+		} catch ( \Throwable $e ) {
+			ob_end_clean();
+			error_log( '[LC Breadcrumb] CustomBreadcrumb::display() failed, falling back: ' . $e->getMessage() );
+		}
 	}
 	// フォールバック
 	echo '<nav class="lc-breadcrumb ' . esc_attr( $extra_class ) . '" aria-label="パンくずリスト">';
